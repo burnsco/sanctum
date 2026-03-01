@@ -118,9 +118,10 @@ describe('OnboardingSanctums', () => {
 
     // Cards are sorted alphabetically: Movies, Anime, Atrium, Forge, Game Room.
     const joinButtons = screen.getAllByRole('button', { name: '+ Join' })
-    await user.click(joinButtons[2]!)
-    await user.click(joinButtons[3]!)
-    await user.click(joinButtons[4]!)
+    expect(joinButtons).toHaveLength(5)
+    await user.click(joinButtons[2])
+    await user.click(joinButtons[3])
+    await user.click(joinButtons[4])
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
     expect(mutateAsyncMock).toHaveBeenCalledWith({

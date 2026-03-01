@@ -352,7 +352,7 @@ export default function Checkers() {
     } else {
       setSelectedPiece(null)
     }
-  }, [coreState?.next_turn, mustJumpFrom])
+  }, [mustJumpFrom])
 
   const selectablePieces = useMemo(() => {
     if (!coreState || !isMyTurn || !mySide) return new Set<string>()

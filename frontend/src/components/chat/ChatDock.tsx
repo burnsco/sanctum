@@ -851,7 +851,7 @@ export function ChatDock() {
     if (isMobile || !isOpen || minimized) return
     const raf = window.requestAnimationFrame(updatePanelSide)
     return () => window.cancelAnimationFrame(raf)
-  }, [dockPos, isMobile, isOpen, minimized, updatePanelSide])
+  }, [isMobile, isOpen, minimized, updatePanelSide])
 
   useEffect(() => {
     if (isMobile || !isOpen || minimized) return
