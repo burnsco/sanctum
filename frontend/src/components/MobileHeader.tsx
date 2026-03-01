@@ -4,6 +4,7 @@ import { ModeToggle } from '@/components/mode-toggle'
 import { getRouteTitle } from '@/components/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getCurrentUser } from '@/hooks'
+import { getAvatarUrl } from '@/lib/chat-utils'
 
 export function MobileHeader() {
   const location = useLocation()
@@ -45,7 +46,12 @@ export function MobileHeader() {
             aria-label='Profile'
           >
             <Avatar className='h-7 w-7'>
-              <AvatarImage src={currentUser?.avatar || ''} />
+              <AvatarImage
+                src={
+                  currentUser?.avatar ||
+                  getAvatarUrl(currentUser?.username ?? 'user')
+                }
+              />
               <AvatarFallback>
                 {currentUser?.username?.[0]?.toUpperCase() || 'U'}
               </AvatarFallback>

@@ -29,7 +29,7 @@ YELLOW := \033[1;33m
 RED := \033[1;31m
 NC := \033[0m # No Color
 
-.PHONY: help setup-local bootstrap dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend lint-frontend-fix type-check-frontend check-frontend install-githooks verify-githooks install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-install-backend-local deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index ai-memory-backfill ai-memory-update ai-memory-validate ai-docs-verify openapi-check
+.PHONY: help setup-local bootstrap dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend lint-frontend-fix type-check-frontend check-frontend install-githooks verify-githooks install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed seed-realistic db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-install-backend-local deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index ai-memory-backfill ai-memory-update ai-memory-validate ai-docs-verify openapi-check
 
 # Default target
 help:
@@ -107,6 +107,7 @@ help:
 	@echo ""
 	@echo "$(GREEN)Database:$(NC)"
 	@echo "  make seed               - 🌱 Seed database with test data"
+	@echo "  make seed-realistic     - 🌱 Seed with ~10 realistic posts per sanctum"
 	@echo "  make db-migrate         - 🧭 Apply SQL migrations (Docker)"
 	@echo "  make db-migrate-auto    - 🧭 Run AutoMigrate mode (explicit)"
 	@echo "  make db-schema-status   - 🧭 Show schema mode and migration status (Docker)"
@@ -750,6 +751,13 @@ seed:
 	@echo "$(BLUE)Seeding database with test data...$(NC)"
 	cd backend && $(GO) run cmd/seed/main.go
 	@echo "$(GREEN)✓ Database seeded successfully!$(NC)"
+	@echo "$(YELLOW)📧 Test users password: password123$(NC)"
+
+# Seed with realistic, category-fitting posts and comments (~10 per sanctum)
+seed-realistic:
+	@echo "$(BLUE)Seeding database with realistic per-sanctum content...$(NC)"
+	cd backend && $(GO) run cmd/seed/main.go -preset Realistic
+	@echo "$(GREEN)✓ Realistic seed completed!$(NC)"
 	@echo "$(YELLOW)📧 Test users password: password123$(NC)"
 
 db-migrate:

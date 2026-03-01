@@ -66,6 +66,26 @@ Example users:
 - Random distribution across posts
 - Realistic engagement patterns
 
+### Realistic preset (`make seed-realistic` or `-preset Realistic`)
+
+- **20 users** (same password: `password123`)
+- **~10 posts per sanctum** with category-appropriate content:
+  - Movies: Dune, Godfather, horror recommendations, trailers
+  - Television: Severance, limited series, comfort rewatches
+  - Books: Project Hail Mary, fantasy, audiobooks
+  - Music: albums, concerts, vinyl, recommendations
+  - Anime: Frieren, fight choreography, Ghibli
+  - Gaming / PC Gaming: Elden Ring, Baldur’s Gate 3, GPUs, Steam Deck
+  - Development: Go vs Rust, Docker, TypeScript, migrations
+  - Hardware: CPUs, cooling, monitors, PSU
+  - Linux: distros, Wayland, dotfiles
+  - AI: LLMs, RAG, coding tools
+  - Fitness: home gym, running, protein
+  - Food: meal prep, sourdough, weeknight dinners
+- **Relevant comments** on each post (questions, recommendations, short replies)
+- **Stable images** via Picsum seeds so thumbnails match the topic
+- General, Herald, and Support get a small number of on-topic posts
+
 ## Advanced Usage
 
 ### Run Seeder Directly
@@ -84,6 +104,14 @@ go run cmd/seed/main.go -all-sanctums -count 10
 
 # Seed a single sanctum by slug with 5 posts
 go run cmd/seed/main.go -sanctum pcgaming -count 5
+```
+
+**Realistic preset** — each sanctum filled with ~10 on-topic posts and comments (e.g. gaming discussions, movie recommendations, dev questions):
+
+```bash
+make seed-realistic
+# or
+cd backend && go run cmd/seed/main.go -preset Realistic
 ```
 
 Validate seed distribution (requires `psql` and `DATABASE_URL` env var):

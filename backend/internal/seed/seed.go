@@ -805,6 +805,81 @@ func (s *Seeder) SeedSanctumsWithDistribution(users []*models.User, countPerSanc
 	return nil
 }
 
+// SeedSanctumsRealistic fills each sanctum with up to postsPerSanctum posts
+// from category-specific templates (realistic titles, content, and comments).
+// Uses realisticTemplatesBySanctum; sanctums without templates get general posts.
+func (s *Seeder) SeedSanctumsRealistic(users []*models.User, postsPerSanctum int) error {
+	log.Printf("🏰 Seeding realistic posts (%d per sanctum)...", postsPerSanctum)
+	var sanctums []*models.Sanctum
+	if err := s.db.Find(&sanctums).Error; err != nil {
+		return err
+	}
+	if len(users) == 0 {
+		return fmt.Errorf("no users to assign as post authors")
+	}
+
+	// #nosec G404: Non-cryptographic randomness is acceptable for seeding test data
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	pickUser := func() *models.User { return users[r.Intn(len(users))] }
+
+	for _, sanctum := range sanctums {
+		templates := realisticTemplatesBySanctum[sanctum.Slug]
+		if len(templates) == 0 {
+			templates = realisticTemplatesBySanctum["general"]
+		}
+		if len(templates) == 0 {
+			continue
+		}
+		n := postsPerSanctum
+		if n > len(templates) {
+			n = len(templates)
+		}
+		log.Printf("  📍 %s: %d realistic posts", sanctum.Name, n)
+		sanctumID := sanctum.ID
+		for i := 0; i < n; i++ {
+			tpl := &templates[i]
+			creator := pickUser()
+			overrides := []func(*models.Post){
+				func(p *models.Post) {
+					p.Title = tpl.Title
+					p.Content = tpl.Content
+					p.PostType = tpl.PostType
+					p.SanctumID = &sanctumID
+					p.ImageURL = fmt.Sprintf("https://picsum.photos/seed/%s/800/600", tpl.ImageSeed)
+					if tpl.LinkURL != "" {
+						p.LinkURL = tpl.LinkURL
+					}
+					if tpl.YoutubeID != "" {
+						p.YoutubeURL = fmt.Sprintf("https://www.youtube.com/watch?v=%s", tpl.YoutubeID)
+					}
+				},
+			}
+			post, err := s.factory.CreatePostWithTemplate(creator, tpl.PostType, overrides...)
+			if err != nil {
+				continue
+			}
+			for _, commentText := range tpl.Comments {
+				commenter := pickUser()
+				_, _ = s.factory.CreateComment(commenter, post, func(c *models.Comment) {
+					c.Content = commentText
+				})
+			}
+			likersCount := r.Intn(len(users)/2) + 1
+			likedBy := make(map[uint]bool)
+			for j := 0; j < likersCount; j++ {
+				liker := pickUser()
+				if likedBy[liker.ID] {
+					continue
+				}
+				if err := s.factory.CreateLike(liker, post); err == nil {
+					likedBy[liker.ID] = true
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // ApplyPreset runs a named seeder preset (e.g. "MegaPopulated").
 func (s *Seeder) ApplyPreset(name string) error {
 	log.Printf("🌟 Applying seeder preset: %s", name)
@@ -826,6 +901,13 @@ func (s *Seeder) ApplyPreset(name string) error {
 			return err
 		}
 		_ = s.SeedSanctumsWithDistribution(users, 10)
+	case "Realistic":
+		// Fill each sanctum with ~10 realistic, category-fitting posts and comments.
+		users, err := s.SeedSocialMesh(20)
+		if err != nil {
+			return err
+		}
+		_ = s.SeedSanctumsRealistic(users, 10)
 	default:
 		log.Printf("⚠️ Unknown preset: %s", name)
 	}

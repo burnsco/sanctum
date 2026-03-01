@@ -25,6 +25,7 @@ import {
   useRejectFriendRequest,
 } from '@/hooks/useFriends'
 import { useNotificationStore } from '@/hooks/useRealtimeNotifications'
+import { getAvatarUrl } from '@/lib/chat-utils'
 import { cn } from '@/lib/utils'
 import { useChatContext } from '@/providers/ChatProvider'
 import { useChatDockStore } from '@/stores/useChatDockStore'
@@ -306,7 +307,12 @@ export function TopBar() {
                     className='inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/60 bg-card transition-colors hover:bg-muted/50'
                   >
                     <Avatar className='h-7 w-7'>
-                      <AvatarImage src={currentUser.avatar} />
+                      <AvatarImage
+                        src={
+                          currentUser.avatar ||
+                          getAvatarUrl(currentUser.username)
+                        }
+                      />
                       <AvatarFallback>
                         {currentUser.username?.[0]?.toUpperCase() || 'U'}
                       </AvatarFallback>

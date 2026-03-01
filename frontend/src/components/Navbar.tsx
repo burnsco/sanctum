@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { getCurrentUser, useIsAuthenticated, useLogout } from '@/hooks'
-import { getInitials } from '@/lib/chat-utils'
+import { getAvatarUrl, getInitials } from '@/lib/chat-utils'
 
 const navLinks = [...topRouteNav, ...topServiceNav]
 
@@ -53,7 +53,9 @@ export function Navbar() {
                 >
                   <Avatar className='h-10 w-10'>
                     <AvatarImage
-                      src={currentUser.avatar}
+                      src={
+                        currentUser.avatar || getAvatarUrl(currentUser.username)
+                      }
                       alt={currentUser.username}
                     />
                     <AvatarFallback>
