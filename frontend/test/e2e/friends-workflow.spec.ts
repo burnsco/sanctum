@@ -9,8 +9,12 @@ test.describe('Friends workflow', () => {
     page,
   }) => {
     await page.goto('/friends')
+    await expect(page).toHaveURL(/\/friends(?:\?.*)?$/)
     await expect(
-      page.getByRole('heading', { name: 'Friends', level: 1 })
+      page.getByRole('heading', {
+        level: 1,
+        name: /People You May Know|All Friends|Friend Requests/,
+      })
     ).toBeVisible({ timeout: TEST_TIMEOUTS.POLL })
   })
 })
