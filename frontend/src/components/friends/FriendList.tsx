@@ -1,6 +1,6 @@
 import { Link as LinkIcon, MessageCircle, UserX } from 'lucide-react'
 import { useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -11,30 +11,23 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { useCreateConversation } from '@/hooks/useChat'
 import { useFriends, useRemoveFriend } from '@/hooks/useFriends'
 import { usePresenceStore } from '@/hooks/usePresence'
 import { getAvatarUrl } from '@/lib/chat-utils'
+import { useChatDockStore } from '@/stores/useChatDockStore'
 
 export function FriendList() {
   const { data: friends, isLoading } = useFriends()
   const onlineUserIds = usePresenceStore(state => state.onlineUserIds)
   const removeFriend = useRemoveFriend()
-  const createConversation = useCreateConversation()
-  const navigate = useNavigate()
+  const { setActiveConversation, open } = useChatDockStore()
 
   const handleMessage = useCallback(
     (friendId: number) => {
-      createConversation.mutate(
-        { participant_ids: [friendId] },
-        {
-          onSuccess: conv => {
-            navigate(`/chat/${conv.id}`)
-          },
-        }
-      )
+      setActiveConversation(-friendId)
+      open()
     },
-    [createConversation, navigate]
+    [setActiveConversation, open]
   )
 
   if (isLoading) {
@@ -51,11 +44,8 @@ export function FriendList() {
         <p className='text-muted-foreground mb-4'>
           You haven't added any friends yet.
         </p>
-        <Button
-          variant='secondary'
-          onClick={() => navigate('/friends?tab=find')}
-        >
-          Find People
+        <Button variant='secondary' asChild>
+          <Link to='/friends?tab=find'>Find People</Link>
         </Button>
       </div>
     )

@@ -517,8 +517,9 @@ function MainLayout({ children }: { children: ReactNode }) {
   const location = useLocation()
   const isChatRoute =
     location.pathname === '/chat' || location.pathname.startsWith('/chat/')
+  const isFriendsRoute = location.pathname === '/friends'
   const isGameRoomRoute = parseGameRoomPath(location.pathname) !== null
-  const isViewportLockedRoute = isChatRoute || isGameRoomRoute
+  const isViewportLockedRoute = isChatRoute || isFriendsRoute || isGameRoomRoute
 
   return (
     <div

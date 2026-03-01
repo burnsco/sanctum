@@ -42,6 +42,7 @@ export const sideNavSections: NavSection[] = [
 export const mobileNav: NavItem[] = [
   { icon: Home, label: 'Home', path: '/' },
   { icon: Rss, label: 'Feed', path: '/feed' },
+  { icon: Users, label: 'Friends', path: '/friends' },
   { icon: MessageSquare, label: 'Chat', path: '/chat' },
   { icon: Gamepad2, label: 'Games', path: '/games' },
 ]

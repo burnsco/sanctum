@@ -40,8 +40,9 @@ export function FriendSidebar({
   ]
 
   return (
-    <div className='w-full md:w-90 shrink-0 bg-background md:border-r h-full flex flex-col'>
-      <div className='p-4 pt-5 pb-2 flex items-center justify-between'>
+    <div className='shrink-0 bg-background border-b md:border-b-0 md:border-r md:w-90 md:h-full md:flex md:flex-col'>
+      {/* Header: desktop only */}
+      <div className='hidden md:flex p-4 pt-5 pb-2 items-center justify-between'>
         <h2 className='text-2xl font-bold tracking-tight'>Friends</h2>
         <Button
           variant='ghost'
@@ -53,46 +54,49 @@ export function FriendSidebar({
         </Button>
       </div>
 
-      <div className='px-2 pb-2'>
-        <nav className='space-y-0.5'>
-          {navItems.map(item => {
-            const isActive = activeView === item.id
-            return (
-              <button
-                type='button'
-                key={item.id}
-                onClick={() => onViewChange(item.id)}
+      {/* Nav: horizontal scroll on mobile, vertical list on desktop */}
+      <nav className='flex md:block overflow-x-auto gap-1 px-2 py-2 md:space-y-0.5 md:px-2 md:pb-2 scrollbar-none'>
+        {navItems.map(item => {
+          const isActive = activeView === item.id
+          return (
+            <button
+              type='button'
+              key={item.id}
+              onClick={() => onViewChange(item.id)}
+              className={cn(
+                'relative shrink-0 flex items-center gap-2 rounded-lg transition-colors font-medium',
+                // Mobile: compact pill
+                'md:w-full md:gap-3 md:px-2 md:py-2',
+                'px-3 py-2',
+                isActive
+                  ? 'bg-muted/80 text-foreground'
+                  : 'hover:bg-muted/50 text-foreground/80 hover:text-foreground'
+              )}
+            >
+              <div
                 className={cn(
-                  'w-full flex items-center gap-3 px-2 py-2 rounded-lg transition-colors font-medium relative',
+                  'flex items-center justify-center rounded-full shrink-0 transition-colors',
+                  // Mobile: smaller icon circle
+                  'w-7 h-7 md:w-9 md:h-9',
                   isActive
-                    ? 'bg-muted/80 text-foreground'
-                    : 'hover:bg-muted/50 text-foreground/80 hover:text-foreground'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-foreground'
                 )}
               >
-                <div
-                  className={cn(
-                    'flex items-center justify-center w-9 h-9 rounded-full shrink-0 transition-colors',
-                    isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground'
-                  )}
-                >
-                  <item.icon className='w-5 h-5' />
+                <item.icon className='w-4 h-4 md:w-5 md:h-5' />
+              </div>
+              <span className='text-[13px] md:text-[17px] whitespace-nowrap md:flex-1 md:text-left'>
+                {item.label}
+              </span>
+              {item.badge && (
+                <div className='flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full'>
+                  {item.badge}
                 </div>
-                <span className='flex-1 text-left text-[17px]'>
-                  {item.label}
-                </span>
-                {item.badge && (
-                  <div className='flex items-center justify-center min-w-5 h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full ml-auto'>
-                    {item.badge}
-                  </div>
-                )}
-                {isActive && <div className='hidden' />}
-              </button>
-            )
-          })}
-        </nav>
-      </div>
+              )}
+            </button>
+          )
+        })}
+      </nav>
     </div>
   )
 }

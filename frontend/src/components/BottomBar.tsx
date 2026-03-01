@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { isRouteActive, mobileNav } from '@/components/navigation'
 import { useConversations } from '@/hooks/useChat'
-import { useFriends } from '@/hooks/useFriends'
+import { useFriends, usePendingRequests } from '@/hooks/useFriends'
 import { useIsAuthenticated } from '@/hooks/useUsers'
 import { cn } from '@/lib/utils'
 import { useChatContext } from '@/providers/ChatProvider'
@@ -17,6 +17,7 @@ export function BottomBar() {
 
   const { data: conversations = [] } = useConversations()
   const { data: friends = [] } = useFriends()
+  const { data: pendingRequests = [] } = usePendingRequests()
 
   const totalUnread = useMemo(() => {
     const friendIds = new Set(friends.map(f => f.id))
@@ -44,6 +45,8 @@ export function BottomBar() {
         >
           {mobileNav.map(item => {
             const active = isRouteActive(location.pathname, item.path)
+            const isFriends = item.path === '/friends'
+            const friendsBadge = isFriends && pendingRequests.length > 0
 
             return (
               <Link
@@ -52,13 +55,18 @@ export function BottomBar() {
                 title={item.label}
                 aria-label={item.label}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[10px] font-semibold transition-colors',
+                  'relative flex flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-[10px] font-semibold transition-colors',
                   active
                     ? 'bg-primary/15 text-primary'
                     : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
                 )}
               >
                 <item.icon className='h-5 w-5' />
+                {friendsBadge && (
+                  <span className='absolute right-2 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[8px] font-bold text-destructive-foreground'>
+                    {pendingRequests.length > 9 ? '9+' : pendingRequests.length}
+                  </span>
+                )}
               </Link>
             )
           })}

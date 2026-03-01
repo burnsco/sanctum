@@ -276,8 +276,9 @@ fmt:
 
 lint:
 	@echo "$(BLUE)Linting Go code with golangci-lint...$(NC)"
-	@if command -v golangci-lint >/dev/null 2>&1 && golangci-lint version 2>/dev/null | grep -Eq 'version (v)?2\.'; then \
-		cd backend && golangci-lint run ./...; \
+	@GOLANGCI=$$(command -v golangci-lint 2>/dev/null || echo "$$HOME/go/bin/golangci-lint"); \
+	if [ -x "$$GOLANGCI" ] && "$$GOLANGCI" version 2>/dev/null | grep -Eq 'version (v)?2\.'; then \
+		cd backend && "$$GOLANGCI" run ./...; \
 	else \
 		echo "$(YELLOW)Local golangci-lint v2 not found; using Docker v2-compatible runner.$(NC)"; \
 		$(MAKE) lint-backend-docker; \
