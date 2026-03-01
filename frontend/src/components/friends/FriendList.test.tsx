@@ -1,6 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import { FriendList } from '@/components/friends/FriendList'
@@ -64,9 +63,10 @@ describe('FriendList', () => {
       screen.getByText("You haven't added any friends yet.")
     ).toBeInTheDocument()
 
-    const user = userEvent.setup()
-    await user.click(screen.getByRole('button', { name: 'Find People' }))
-    expect(mockNavigate).toHaveBeenCalledWith('/friends?tab=find')
+    expect(screen.getByRole('link', { name: 'Find People' })).toHaveAttribute(
+      'href',
+      '/friends?tab=find'
+    )
   })
 
   it('renders friend cards when friends exist', () => {
