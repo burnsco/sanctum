@@ -1,6 +1,7 @@
 import { LogOut, RotateCcw, Ship } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import battleshipImg from '@/assets/images/battleship.webp'
 import { GameChat } from '@/components/games/GameChat'
 import { GameResultOverlay } from '@/components/games/GameResultOverlay'
 import { LeaveGameDialog } from '@/components/games/LeaveGameDialog'
@@ -851,9 +852,23 @@ export default function Battleship() {
         </div>
 
         {/* Chat sidebar */}
-        <div className='flex min-h-0 flex-col xl:col-span-3'>
+        <div className='flex min-h-0 flex-col xl:col-span-3 gap-3'>
+          <Card className='hidden xl:block overflow-hidden border-2 border-teal-500/20 bg-teal-900/10 shadow-lg'>
+            <div className='h-32 relative'>
+              <img
+                src={battleshipImg}
+                alt='Battleship'
+                className='w-full h-full object-cover'
+              />
+              <div className='absolute inset-0 bg-gradient-to-t from-teal-900/80 to-transparent' />
+              <div className='absolute bottom-2 left-3'>
+                <p className='text-[10px] font-black uppercase tracking-widest text-teal-400'>Mode</p>
+                <p className='text-sm font-black text-white italic uppercase'>Naval Warfare</p>
+              </div>
+            </div>
+          </Card>
           <Card
-            className={`flex min-h-0 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm ${isCompactViewport ? '' : 'h-full'}`}
+            className={`flex min-h-0 flex-1 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm ${isCompactViewport ? '' : 'h-full'}`}
           >
             <GameChat
               messages={messages}

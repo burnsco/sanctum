@@ -1,6 +1,7 @@
 import { ChevronDown, LogOut } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import connect4Img from '@/assets/images/connect4.webp'
 import { GameChat } from '@/components/games/GameChat'
 import { GameResultOverlay } from '@/components/games/GameResultOverlay'
 import { LeaveGameDialog } from '@/components/games/LeaveGameDialog'
@@ -328,9 +329,23 @@ export default function ConnectFour() {
           </Card>
         </div>
 
-        <div className='flex min-h-0 flex-col xl:col-span-3'>
+        <div className='flex min-h-0 flex-col xl:col-span-3 gap-3'>
+          <Card className='hidden xl:block overflow-hidden border-2 border-blue-500/20 bg-blue-900/10 shadow-lg'>
+            <div className='h-32 relative'>
+              <img
+                src={connect4Img}
+                alt='Connect Four'
+                className='w-full h-full object-cover'
+              />
+              <div className='absolute inset-0 bg-gradient-to-t from-blue-900/80 to-transparent' />
+              <div className='absolute bottom-2 left-3'>
+                <p className='text-[10px] font-black uppercase tracking-widest text-blue-400'>Mode</p>
+                <p className='text-sm font-black text-white italic uppercase'>7x6 Gravity Match</p>
+              </div>
+            </div>
+          </Card>
           <Card
-            className={`flex min-h-0 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm ${isCompactViewport ? '' : 'h-full'}`}
+            className={`flex min-h-0 flex-1 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm ${isCompactViewport ? '' : 'h-full'}`}
           >
             <GameChat
               messages={messages}

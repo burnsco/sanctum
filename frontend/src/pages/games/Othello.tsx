@@ -1,6 +1,7 @@
 import { Crown } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import othelloImg from '@/assets/images/Othello.jpg'
 import { GameChat } from '@/components/games/GameChat'
 import { GameResultOverlay } from '@/components/games/GameResultOverlay'
 import { RematchDialog } from '@/components/games/RematchDialog'
@@ -455,9 +456,23 @@ export default function Othello() {
           </Card>
         </div>
 
-        <div className='flex min-h-0 flex-col xl:col-span-3'>
+        <div className='flex min-h-0 flex-col xl:col-span-3 gap-3'>
+          <Card className='hidden xl:block overflow-hidden border-2 border-emerald-500/20 bg-emerald-950/10 shadow-lg'>
+            <div className='h-32 relative'>
+              <img
+                src={othelloImg}
+                alt='Othello'
+                className='w-full h-full object-cover'
+              />
+              <div className='absolute inset-0 bg-gradient-to-t from-emerald-950/80 to-transparent' />
+              <div className='absolute bottom-2 left-3'>
+                <p className='text-[10px] font-black uppercase tracking-widest text-emerald-400'>Mode</p>
+                <p className='text-sm font-black text-white italic uppercase'>Reversi Strategy</p>
+              </div>
+            </div>
+          </Card>
           <Card
-            className={`flex min-h-0 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm ${isCompactViewport ? '' : 'h-full'}`}
+            className={`flex min-h-0 flex-1 flex-col overflow-hidden border-2 bg-card/50 backdrop-blur-sm ${isCompactViewport ? '' : 'h-full'}`}
           >
             <GameChat
               messages={messages}

@@ -1,8 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Gamepad2,
-  Layers,
-  Spade,
   Trophy,
   UserCircle,
   Users,
@@ -10,6 +8,10 @@ import {
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import battleshipImg from '@/assets/images/battleship.webp'
+import checkersImg from '@/assets/images/checkers.png'
+import connect4Img from '@/assets/images/connect4.webp'
+import othelloImg from '@/assets/images/Othello.jpg'
 import { apiClient } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,112 +21,35 @@ import {
   removeResumableGameRoom,
 } from '@/lib/game-room-presence'
 
-const GAME_CATEGORIES = [
+const GAMES = [
   {
-    name: 'Classic Board Games',
-    icon: <Layers className='w-5 h-5 text-blue-500' />,
-    games: [
-      {
-        id: 'connect4',
-        name: 'Connect Four',
-        description: '7x6 Gravity Match',
-        reward: '+15 VP',
-        color: 'blue',
-      },
-      {
-        id: 'chess',
-        name: 'Chess',
-        description: 'The Grandmaster Challenge',
-        reward: '+50 VP',
-        status: 'coming-soon',
-      },
-      {
-        id: 'checkers',
-        name: 'Checkers',
-        description: 'Classic Jumps',
-        reward: '+20 VP',
-      },
-      {
-        id: 'othello',
-        name: 'Othello',
-        description: 'Reversi Strategy',
-        reward: '+25 VP',
-      },
-      {
-        id: 'battleship',
-        name: 'Battleship',
-        description: 'Naval Warfare',
-        reward: '+30 VP',
-      },
-    ],
+    id: 'connect4',
+    name: 'Connect Four',
+    description: '7x6 Gravity Match',
+    reward: '+15 VP',
+    color: 'blue',
+    image: connect4Img,
   },
   {
-    name: 'Card Games',
-    icon: <Spade className='w-5 h-5 text-red-500' />,
-    games: [
-      {
-        id: 'blackjack',
-        name: 'Blackjack',
-        description: 'Beat the Dealer',
-        reward: 'Variable',
-        status: 'coming-soon',
-      },
-      {
-        id: 'poker',
-        name: 'Poker',
-        description: 'Holdem & More',
-        reward: 'High Stakes',
-        status: 'coming-soon',
-      },
-      {
-        id: 'crazy-eights',
-        name: 'Crazy Eights',
-        description: 'Fast Card Action',
-        reward: '+15 VP',
-        status: 'coming-soon',
-      },
-      {
-        id: 'hearts',
-        name: 'Hearts',
-        description: 'Avoid the Queen',
-        reward: '+20 VP',
-        status: 'coming-soon',
-      },
-      {
-        id: 'president',
-        name: 'President',
-        description: 'Climb the Hierarchy',
-        reward: '+20 VP',
-        status: 'coming-soon',
-      },
-    ],
+    id: 'checkers',
+    name: 'Checkers',
+    description: 'Classic Jumps',
+    reward: '+20 VP',
+    image: checkersImg,
   },
   {
-    name: 'Social & Arcades',
-    icon: <Gamepad2 className='w-5 h-5 text-purple-500' />,
-    games: [
-      {
-        id: 'trivia',
-        name: 'Trivia',
-        description: 'Test Your Knowledge',
-        reward: '+10/Question',
-        status: 'coming-soon',
-      },
-      {
-        id: 'draw-guess',
-        name: 'Draw & Guess',
-        description: 'Pictionary Style',
-        reward: '+15 VP',
-        status: 'coming-soon',
-      },
-      {
-        id: 'snake',
-        name: 'Snake',
-        description: 'High Score Chase',
-        reward: '1 VP/Length',
-        status: 'coming-soon',
-      },
-    ],
+    id: 'othello',
+    name: 'Othello',
+    description: 'Reversi Strategy',
+    reward: '+25 VP',
+    image: othelloImg,
+  },
+  {
+    id: 'battleship',
+    name: 'Battleship',
+    description: 'Naval Warfare',
+    reward: '+30 VP',
+    image: battleshipImg,
   },
 ]
 
@@ -269,68 +194,56 @@ export default function Games() {
         </div>
 
         <div className='grid lg:grid-cols-4 gap-8'>
-          <div className='lg:col-span-3 space-y-12'>
-            {GAME_CATEGORIES.map(category => (
-              <div key={category.name} className='space-y-6'>
-                <div className='flex items-center gap-2 border-b pb-2'>
-                  {category.icon}
-                  <h2 className='text-xl font-bold uppercase tracking-tight'>
-                    {category.name}
-                  </h2>
-                </div>
-                <div className='grid md:grid-cols-2 xl:grid-cols-3 gap-6'>
-                  {category.games.map(game => (
-                    <Card
-                      key={game.id}
-                      className={`group overflow-hidden border-2 transition-all hover:scale-[1.02] hover:shadow-xl ${game.status === 'coming-soon' ? 'opacity-70 grayscale-[0.5]' : 'border-primary/20 hover:border-primary'}`}
-                    >
-                      <CardContent className='p-0'>
-                        <div
-                          className={`h-32 flex items-center justify-center relative bg-muted/30 overflow-hidden`}
-                        >
-                          <span className='text-3xl font-black italic tracking-tighter opacity-10 group-hover:opacity-20 transition-opacity uppercase select-none'>
-                            {game.name}
+          <div className='lg:col-span-3 space-y-8'>
+            <div className='flex items-center gap-2 border-b pb-2'>
+              <Gamepad2 className='w-5 h-5 text-primary' />
+              <h2 className='text-xl font-bold uppercase tracking-tight'>
+                Live Games
+              </h2>
+            </div>
+            <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+              {GAMES.map(game => (
+                <Card
+                  key={game.id}
+                  className='group overflow-hidden border-2 transition-all hover:scale-[1.02] hover:shadow-2xl border-primary/20 hover:border-primary bg-card'
+                >
+                  <CardContent className='p-0 flex flex-col h-full'>
+                    <div className='relative aspect-[4/5] overflow-hidden'>
+                      <img
+                        src={game.image}
+                        alt={game.name}
+                        className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
+                      />
+                      <div className='absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent' />
+                      <div className='absolute top-4 right-4 px-3 py-1 bg-primary text-primary-foreground text-[10px] font-black uppercase rounded-full shadow-lg'>
+                        Live
+                      </div>
+                      
+                      <div className='absolute bottom-0 left-0 right-0 p-6'>
+                        <h3 className='font-black text-2xl text-white italic uppercase tracking-tighter mb-2 group-hover:text-primary transition-colors'>
+                          {game.name}
+                        </h3>
+                        <div className='flex items-center gap-3 mb-4'>
+                          <span className='text-[10px] font-black text-primary-foreground px-2 py-0.5 bg-primary rounded-md'>
+                            {game.reward}
                           </span>
-                          {game.status === 'coming-soon' ? (
-                            <div className='absolute top-2 right-2 px-2 py-0.5 bg-muted text-[10px] font-black uppercase rounded border'>
-                              Planned
-                            </div>
-                          ) : (
-                            <div className='absolute top-2 right-2 px-2 py-0.5 bg-primary text-primary-foreground text-[10px] font-black uppercase rounded'>
-                              Live
-                            </div>
-                          )}
-                        </div>
-                        <div className='p-5'>
-                          <div className='flex justify-between items-start mb-2'>
-                            <h3 className='font-bold text-lg'>{game.name}</h3>
-                            <span className='text-[10px] font-black text-primary px-2 py-0.5 bg-primary/10 rounded-full'>
-                              {game.reward}
-                            </span>
-                          </div>
-                          <p className='text-sm text-muted-foreground mb-5 h-10 line-clamp-2'>
+                          <p className='text-xs text-slate-300 font-bold uppercase tracking-wider'>
                             {game.description}
                           </p>
-                          <Button
-                            className='w-full font-bold uppercase italic tracking-wider text-xs'
-                            variant={
-                              game.status === 'coming-soon'
-                                ? 'secondary'
-                                : 'default'
-                            }
-                            onClick={() => handlePlayNow(game.id)}
-                          >
-                            {game.status === 'coming-soon'
-                              ? 'Preview'
-                              : 'Play Now'}
-                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            ))}
+                        <Button
+                          size='lg'
+                          className='w-full font-black uppercase italic tracking-widest text-sm h-12 shadow-xl hover:scale-105 transition-transform'
+                          onClick={() => handlePlayNow(game.id)}
+                        >
+                          Play Now
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
 
           <div className='space-y-8'>
