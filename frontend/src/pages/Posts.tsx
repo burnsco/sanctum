@@ -1278,7 +1278,7 @@ export default function Posts({ mode = 'all', sanctumId }: PostsProps) {
                     Cancel
                   </Button>
                   <Button
-                    className='text-destructive'
+                    variant='destructive'
                     onClick={async () => {
                       if (!deletingPostId) return
                       try {
