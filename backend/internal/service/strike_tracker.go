@@ -32,31 +32,38 @@ func NewGORMStrikeTracker(db *gorm.DB) StrikeTracker {
 // If the count reaches moderationStrikeLimit the account is auto-banned.
 // Returns the new strike count and whether the ban was applied.
 func (t *gormStrikeTracker) RecordStrike(ctx context.Context, userID uint) (int, bool, error) {
-	var user models.User
+	var strikes int
+	var isBanned bool
 
-	err := t.db.WithContext(ctx).
-		Clauses(clause.Locking{Strength: "UPDATE"}).
-		First(&user, userID).Error
+	err := t.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var user models.User
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, userID).Error; err != nil {
+			return err
+		}
+
+		user.ModerationStrikes++
+		if user.ModerationStrikes >= moderationStrikeLimit && !user.IsBanned {
+			user.IsBanned = true
+			now := time.Now()
+			user.BannedAt = &now
+			user.BannedReason = "Automated ban: repeated content policy violations"
+			isBanned = true
+		}
+
+		if err := tx.Save(&user).Error; err != nil {
+			return err
+		}
+
+		strikes = user.ModerationStrikes
+		isBanned = isBanned || user.IsBanned
+		return nil
+	})
 	if err != nil {
-		return 0, false, err
-	}
-
-	user.ModerationStrikes++
-	isBanned := false
-	if user.ModerationStrikes >= moderationStrikeLimit && !user.IsBanned {
-		user.IsBanned = true
-		now := time.Now()
-		user.BannedAt = &now
-		user.BannedReason = "Automated ban: repeated content policy violations"
-		isBanned = true
-	}
-
-	if err := t.db.WithContext(ctx).Save(&user).Error; err != nil {
 		return 0, false, err
 	}
 
 	// Invalidate the user cache so the next auth check picks up the ban.
 	cache.InvalidateUser(ctx, userID)
 
-	return user.ModerationStrikes, isBanned || user.IsBanned, nil
+	return strikes, isBanned, nil
 }

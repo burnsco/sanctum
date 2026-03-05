@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -183,7 +184,10 @@ func (s *PostService) CreatePost(ctx context.Context, in CreatePostInput) (*mode
 	if s.moderator != nil {
 		if err := s.moderator.CheckWithImage(ctx, in.Title+" "+content, in.ImageURL); err != nil {
 			if s.strikeTracker != nil {
-				strikes, isBanned, _ := s.strikeTracker.RecordStrike(ctx, in.UserID)
+				strikes, isBanned, strikeErr := s.strikeTracker.RecordStrike(ctx, in.UserID)
+				if strikeErr != nil {
+					return nil, fmt.Errorf("recording moderation strike: %w", strikeErr)
+				}
 				return nil, models.NewModerationViolationError(err.Error(), strikes, isBanned)
 			}
 			return nil, models.NewValidationError(err.Error())

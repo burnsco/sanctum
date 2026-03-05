@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"sanctum/internal/moderation"
 	"sanctum/internal/models"
@@ -73,7 +74,10 @@ func (s *CommentService) CreateComment(ctx context.Context, in CreateCommentInpu
 	if s.moderator != nil {
 		if err := s.moderator.Check(ctx, in.Content); err != nil {
 			if s.strikeTracker != nil {
-				strikes, isBanned, _ := s.strikeTracker.RecordStrike(ctx, in.UserID)
+				strikes, isBanned, strikeErr := s.strikeTracker.RecordStrike(ctx, in.UserID)
+				if strikeErr != nil {
+					return nil, fmt.Errorf("recording moderation strike: %w", strikeErr)
+				}
 				return nil, models.NewModerationViolationError(err.Error(), strikes, isBanned)
 			}
 			return nil, models.NewValidationError(err.Error())
