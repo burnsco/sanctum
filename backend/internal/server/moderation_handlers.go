@@ -474,6 +474,16 @@ func (s *Server) UnbanUser(c *fiber.Ctx) error {
 }
 
 // GetAdminDeletedPosts handles GET /api/admin/deleted-posts.
+// @Summary List deleted posts
+// @Description Returns soft-deleted posts for admin review.
+// @Tags moderation-admin
+// @Produce json
+// @Param limit query int false "Max results"
+// @Param offset query int false "Offset"
+// @Success 200 {array} service.DeletedPostRow
+// @Failure 500 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /admin/deleted-posts [get]
 func (s *Server) GetAdminDeletedPosts(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	page := parsePagination(c, 100)
@@ -485,6 +495,16 @@ func (s *Server) GetAdminDeletedPosts(c *fiber.Ctx) error {
 }
 
 // GetAdminDeletedComments handles GET /api/admin/deleted-comments.
+// @Summary List deleted comments
+// @Description Returns soft-deleted comments for admin review.
+// @Tags moderation-admin
+// @Produce json
+// @Param limit query int false "Max results"
+// @Param offset query int false "Offset"
+// @Success 200 {array} service.DeletedCommentRow
+// @Failure 500 {object} models.ErrorResponse
+// @Security BearerAuth
+// @Router /admin/deleted-comments [get]
 func (s *Server) GetAdminDeletedComments(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	page := parsePagination(c, 100)

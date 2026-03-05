@@ -98,7 +98,9 @@ jobs:
           PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
         run: |
           set -euo pipefail
-          gh pr edit "$PR_NUMBER" --body-file PR_BODY.md
+          # Use REST API directly to avoid gh CLI failing on classic Projects deprecation warnings
+          jq -n --rawfile body PR_BODY.md '{body: $body}' | \
+            gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" -X PATCH --input -
           echo "Updated PR #$PR_NUMBER"
 
       - name: Skip PR body update in read-only PR contexts

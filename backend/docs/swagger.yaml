@@ -333,6 +333,8 @@ definitions:
         type: boolean
       is_banned:
         type: boolean
+      moderation_strikes:
+        type: integer
       posts:
         items:
           $ref: '#/definitions/models.Post'
@@ -444,6 +446,38 @@ definitions:
       user:
         $ref: '#/definitions/models.User'
     type: object
+  service.DeletedCommentRow:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      post_id:
+        type: integer
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
+  service.DeletedPostRow:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      post_type:
+        type: string
+      sanctum_id:
+        type: integer
+      user_id:
+        type: integer
+      username:
+        type: string
+    type: object
 host: localhost:8375
 info:
   contact:
@@ -480,6 +514,66 @@ paths:
       security:
       - BearerAuth: []
       summary: List ban requests
+      tags:
+      - moderation-admin
+  /admin/deleted-comments:
+    get:
+      description: Returns soft-deleted comments for admin review.
+      parameters:
+      - description: Max results
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/service.DeletedCommentRow'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List deleted comments
+      tags:
+      - moderation-admin
+  /admin/deleted-posts:
+    get:
+      description: Returns soft-deleted posts for admin review.
+      parameters:
+      - description: Max results
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/service.DeletedPostRow'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List deleted posts
       tags:
       - moderation-admin
   /admin/reports:
