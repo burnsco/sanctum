@@ -1,5 +1,11 @@
 import { ChevronDown, Send } from 'lucide-react'
-import { type KeyboardEvent, type RefObject, useEffect, useState } from 'react'
+import {
+  type KeyboardEvent,
+  type RefObject,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import { Button } from '@/components/ui/button'
 import { CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -73,6 +79,20 @@ export function GameChat({
 }: GameChatProps) {
   const accent = ACCENT[accentColor]
   const [collapsed, setCollapsed] = useState(compact && defaultCollapsed)
+  const keyedMessages = useMemo(() => {
+    const occurrenceMap = new Map<string, number>()
+
+    return messages.map(message => {
+      const baseKey = `${message.user_id}-${message.username}-${message.text}`
+      const occurrence = (occurrenceMap.get(baseKey) ?? 0) + 1
+      occurrenceMap.set(baseKey, occurrence)
+
+      return {
+        key: `${baseKey}-${occurrence}`,
+        message,
+      }
+    })
+  }, [messages])
 
   useEffect(() => {
     setCollapsed(compact && defaultCollapsed)
@@ -124,9 +144,9 @@ export function GameChat({
                 </p>
               </div>
             )}
-            {messages.map((m, i) => (
+            {keyedMessages.map(({ key, message: m }) => (
               <div
-                key={`${m.user_id}-${i}-${m.text.slice(0, 20)}`}
+                key={key}
                 className={`flex flex-col ${m.user_id === currentUserId ? 'items-end' : 'items-start'}`}
               >
                 <span className='mb-1 text-[9px] font-black uppercase tracking-tighter text-muted-foreground/60'>

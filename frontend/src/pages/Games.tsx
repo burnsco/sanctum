@@ -1,18 +1,13 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Gamepad2,
-  Trophy,
-  UserCircle,
-  Users,
-} from 'lucide-react'
+import { Gamepad2, Trophy, UserCircle, Users } from 'lucide-react'
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { apiClient } from '@/api/client'
 import battleshipImg from '@/assets/images/battleship.webp'
 import checkersImg from '@/assets/images/checkers.png'
 import connect4Img from '@/assets/images/connect4.webp'
 import othelloImg from '@/assets/images/Othello.jpg'
-import { apiClient } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { gameKeys, getCurrentUser } from '@/hooks'
@@ -218,7 +213,7 @@ export default function Games() {
                       <div className='absolute top-4 right-4 px-3 py-1 bg-primary text-primary-foreground text-[10px] font-black uppercase rounded-full shadow-lg'>
                         Live
                       </div>
-                      
+
                       <div className='absolute bottom-0 left-0 right-0 p-6'>
                         <h3 className='font-black text-2xl text-white italic uppercase tracking-tighter mb-2 group-hover:text-primary transition-colors'>
                           {game.name}

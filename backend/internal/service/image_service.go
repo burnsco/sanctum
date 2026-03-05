@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"sanctum/internal/config"
-	"sanctum/internal/moderation"
 	"sanctum/internal/models"
+	"sanctum/internal/moderation"
 	"sanctum/internal/observability"
 	"sanctum/internal/repository"
 
