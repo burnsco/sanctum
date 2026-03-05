@@ -164,7 +164,8 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		server.postService.SetStrikeTracker(strikeTracker)
 		server.commentService.SetModerator(mod)
 		server.commentService.SetStrikeTracker(strikeTracker)
-		log.Println("[moderation] OpenAI content moderation enabled (posts and comments only)")
+		server.imageService.SetModerator(mod)
+		log.Println("[moderation] OpenAI content moderation enabled (posts, comments, and image uploads)")
 	}
 	// NOTE: built-in sanctum seeding is intentionally NOT performed here.
 	// Seeding should be explicit during runtime bootstrap (cmd) or test setup.
@@ -255,7 +256,8 @@ func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Clien
 		server.postService.SetStrikeTracker(strikeTracker)
 		server.commentService.SetModerator(mod)
 		server.commentService.SetStrikeTracker(strikeTracker)
-		log.Println("[moderation] OpenAI content moderation enabled (posts and comments only)")
+		server.imageService.SetModerator(mod)
+		log.Println("[moderation] OpenAI content moderation enabled (posts, comments, and image uploads)")
 	}
 
 	// Initialize notifier and hub if Redis is available

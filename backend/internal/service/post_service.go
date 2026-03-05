@@ -182,7 +182,13 @@ func (s *PostService) CreatePost(ctx context.Context, in CreatePostInput) (*mode
 	}
 
 	if s.moderator != nil {
-		if err := s.moderator.CheckWithImage(ctx, in.Title+" "+content, in.ImageURL); err != nil {
+		// Only pass image URL to OpenAI if it's absolute — relative paths are
+		// self-hosted images already checked at upload time.
+		imageURLForCheck := in.ImageURL
+		if strings.HasPrefix(imageURLForCheck, "/") {
+			imageURLForCheck = ""
+		}
+		if err := s.moderator.CheckWithImage(ctx, in.Title+" "+content, imageURLForCheck); err != nil {
 			if s.strikeTracker != nil {
 				strikes, isBanned, strikeErr := s.strikeTracker.RecordStrike(ctx, in.UserID)
 				if strikeErr != nil {
