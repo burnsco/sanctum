@@ -35,6 +35,8 @@ func mapServiceError(err error) int {
 		switch appErr.Code {
 		case "VALIDATION_ERROR":
 			return fiber.StatusBadRequest
+		case "MODERATION_VIOLATION":
+			return fiber.StatusUnprocessableEntity
 		case "UNAUTHORIZED":
 			return fiber.StatusForbidden
 		case "FORBIDDEN":

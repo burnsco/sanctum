@@ -15,6 +15,7 @@ services:
       - REDIS_URL=redis:6379
       - DB_HOST=postgres
       - APP_ENV=${APP_ENV:-development}
+      - OPENAI_MODERATION_KEY=${OPENAI_MODERATION_KEY}
 
   postgres:
     ports:

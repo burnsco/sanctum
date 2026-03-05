@@ -17,6 +17,7 @@ import type {
   UpdatePostRequest,
 } from '../api/types'
 import { handleAuthOrFKError } from '../lib/handleAuthOrFKError'
+import { handleModerationError } from '../lib/handleModerationError'
 import { useMySanctumMemberships } from './useSanctums'
 
 // Query keys
@@ -201,6 +202,7 @@ export function useCreatePost() {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() })
     },
     onError: error => {
+      if (handleModerationError(error)) return
       handleAuthOrFKError(error)
     },
   })

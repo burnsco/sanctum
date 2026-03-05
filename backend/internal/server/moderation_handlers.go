@@ -473,6 +473,28 @@ func (s *Server) UnbanUser(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"message": "User unbanned"})
 }
 
+// GetAdminDeletedPosts handles GET /api/admin/deleted-posts.
+func (s *Server) GetAdminDeletedPosts(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	page := parsePagination(c, 100)
+	rows, err := s.moderationSvc().GetAdminDeletedPosts(ctx, page.Limit, page.Offset)
+	if err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+	return c.JSON(rows)
+}
+
+// GetAdminDeletedComments handles GET /api/admin/deleted-comments.
+func (s *Server) GetAdminDeletedComments(c *fiber.Ctx) error {
+	ctx := c.UserContext()
+	page := parsePagination(c, 100)
+	rows, err := s.moderationSvc().GetAdminDeletedComments(ctx, page.Limit, page.Offset)
+	if err != nil {
+		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
+	}
+	return c.JSON(rows)
+}
+
 func (s *Server) createModerationReport(
 	ctx context.Context,
 	reporterID uint,

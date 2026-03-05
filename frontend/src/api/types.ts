@@ -11,6 +11,7 @@ export interface User {
   banned_at?: string
   banned_reason?: string
   banned_by_user_id?: number
+  moderation_strikes?: number
   created_at: string
   liked?: boolean
   updated_at: string
@@ -334,6 +335,25 @@ export interface AdminUserDetailResponse {
   blocks_given: UserBlock[]
   blocks_received: UserBlock[]
   warnings?: string[]
+}
+
+export interface AdminDeletedPost {
+  id: number
+  user_id: number
+  username: string
+  post_type: string
+  sanctum_id?: number
+  created_at: string
+  deleted_at: string
+}
+
+export interface AdminDeletedComment {
+  id: number
+  user_id: number
+  username: string
+  post_id: number
+  created_at: string
+  deleted_at: string
 }
 
 export interface CreateConversationRequest {

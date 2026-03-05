@@ -202,3 +202,54 @@ func TestCommentService_DeleteComment_Ownership(t *testing.T) {
 		assert.ErrorIs(t, err, adminErr)
 	})
 }
+
+func TestCommentService_CreateComment_Moderation(t *testing.T) {
+	t.Parallel()
+
+	baseInput := CreateCommentInput{
+		UserID:  1,
+		PostID:  1,
+		Content: "Nice post!",
+	}
+
+	t.Run("nil moderator passes through", func(t *testing.T) {
+		t.Parallel()
+		svc := NewCommentService(noopCommentRepo(), noopPostRepo(), nil)
+		_, err := svc.CreateComment(context.Background(), baseInput)
+		require.NoError(t, err)
+	})
+
+	t.Run("allow-all moderator passes through", func(t *testing.T) {
+		t.Parallel()
+		svc := NewCommentService(noopCommentRepo(), noopPostRepo(), nil)
+		svc.SetModerator(allowAllModerator())
+		_, err := svc.CreateComment(context.Background(), baseInput)
+		require.NoError(t, err)
+	})
+
+	t.Run("flagged content without strike tracker returns validation error", func(t *testing.T) {
+		t.Parallel()
+		svc := NewCommentService(noopCommentRepo(), noopPostRepo(), nil)
+		svc.SetModerator(blockAllModerator())
+		_, err := svc.CreateComment(context.Background(), baseInput)
+		assertValidationError(t, err)
+	})
+
+	t.Run("flagged content with strike tracker returns moderation violation", func(t *testing.T) {
+		t.Parallel()
+		svc := NewCommentService(noopCommentRepo(), noopPostRepo(), nil)
+		svc.SetModerator(blockAllModerator())
+		svc.SetStrikeTracker(fixedStrikeTracker(2, false))
+		_, err := svc.CreateComment(context.Background(), baseInput)
+		assertModerationViolationError(t, err, 2, false)
+	})
+
+	t.Run("third strike auto-bans user", func(t *testing.T) {
+		t.Parallel()
+		svc := NewCommentService(noopCommentRepo(), noopPostRepo(), nil)
+		svc.SetModerator(blockAllModerator())
+		svc.SetStrikeTracker(fixedStrikeTracker(3, true))
+		_, err := svc.CreateComment(context.Background(), baseInput)
+		assertModerationViolationError(t, err, 3, true)
+	})
+}

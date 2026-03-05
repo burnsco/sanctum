@@ -356,3 +356,55 @@ func TestExtractImageHash(t *testing.T) {
 		})
 	}
 }
+
+func TestPostService_CreatePost_Moderation(t *testing.T) {
+	t.Parallel()
+
+	baseInput := CreatePostInput{
+		UserID:   1,
+		Title:    "Hello world",
+		Content:  "Some clean content",
+		PostType: "text",
+	}
+
+	t.Run("nil moderator passes through", func(t *testing.T) {
+		t.Parallel()
+		svc := NewPostService(noopPostRepo(), nil, nil)
+		_, err := svc.CreatePost(context.Background(), baseInput)
+		require.NoError(t, err)
+	})
+
+	t.Run("allow-all moderator passes through", func(t *testing.T) {
+		t.Parallel()
+		svc := NewPostService(noopPostRepo(), nil, nil)
+		svc.SetModerator(allowAllModerator())
+		_, err := svc.CreatePost(context.Background(), baseInput)
+		require.NoError(t, err)
+	})
+
+	t.Run("flagged content without strike tracker returns validation error", func(t *testing.T) {
+		t.Parallel()
+		svc := NewPostService(noopPostRepo(), nil, nil)
+		svc.SetModerator(blockAllModerator())
+		_, err := svc.CreatePost(context.Background(), baseInput)
+		assertValidationError(t, err)
+	})
+
+	t.Run("flagged content with strike tracker returns moderation violation", func(t *testing.T) {
+		t.Parallel()
+		svc := NewPostService(noopPostRepo(), nil, nil)
+		svc.SetModerator(blockAllModerator())
+		svc.SetStrikeTracker(fixedStrikeTracker(1, false))
+		_, err := svc.CreatePost(context.Background(), baseInput)
+		assertModerationViolationError(t, err, 1, false)
+	})
+
+	t.Run("third strike auto-bans user", func(t *testing.T) {
+		t.Parallel()
+		svc := NewPostService(noopPostRepo(), nil, nil)
+		svc.SetModerator(blockAllModerator())
+		svc.SetStrikeTracker(fixedStrikeTracker(3, true))
+		_, err := svc.CreatePost(context.Background(), baseInput)
+		assertModerationViolationError(t, err, 3, true)
+	})
+}

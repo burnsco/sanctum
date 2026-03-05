@@ -6,16 +6,25 @@ import (
 	"strings"
 
 	"sanctum/internal/cache"
+	"sanctum/internal/moderation"
 	"sanctum/internal/models"
 	"sanctum/internal/repository"
 )
 
 // PostService provides post and feed business logic.
 type PostService struct {
-	postRepo repository.PostRepository
-	pollRepo repository.PollRepository
-	isAdmin  func(ctx context.Context, userID uint) (bool, error)
+	postRepo      repository.PostRepository
+	pollRepo      repository.PollRepository
+	isAdmin       func(ctx context.Context, userID uint) (bool, error)
+	moderator     moderation.Moderator
+	strikeTracker StrikeTracker
 }
+
+// SetModerator sets an optional content moderator on the service.
+func (s *PostService) SetModerator(m moderation.Moderator) { s.moderator = m }
+
+// SetStrikeTracker sets the strike tracker used to record moderation violations.
+func (s *PostService) SetStrikeTracker(t StrikeTracker) { s.strikeTracker = t }
 
 // CreatePostPollInput is the poll payload when creating a poll post.
 type CreatePostPollInput struct {
@@ -169,6 +178,16 @@ func (s *PostService) CreatePost(ctx context.Context, in CreatePostInput) (*mode
 	content := in.Content
 	if postType == models.PostTypePoll {
 		content = in.Poll.Question
+	}
+
+	if s.moderator != nil {
+		if err := s.moderator.CheckWithImage(ctx, in.Title+" "+content, in.ImageURL); err != nil {
+			if s.strikeTracker != nil {
+				strikes, isBanned, _ := s.strikeTracker.RecordStrike(ctx, in.UserID)
+				return nil, models.NewModerationViolationError(err.Error(), strikes, isBanned)
+			}
+			return nil, models.NewValidationError(err.Error())
+		}
 	}
 
 	post := &models.Post{

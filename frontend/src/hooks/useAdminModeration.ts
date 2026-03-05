@@ -3,6 +3,7 @@ import { apiClient } from '@/api/client'
 import type {
   BanUserRequest,
   MuteChatroomUserRequest,
+  PaginationParams,
   ResolveModerationReportRequest,
 } from '@/api/types'
 import { handleAuthOrFKError } from '@/lib/handleAuthOrFKError'
@@ -23,6 +24,10 @@ export const adminModerationKeys = {
     [...adminModerationKeys.all, 'users', userId] as const,
   roomMutes: (chatroomId: number) =>
     [...adminModerationKeys.all, 'room-mutes', chatroomId] as const,
+  deletedPosts: (params?: { offset?: number; limit?: number }) =>
+    [...adminModerationKeys.all, 'deleted-posts', params ?? {}] as const,
+  deletedComments: (params?: { offset?: number; limit?: number }) =>
+    [...adminModerationKeys.all, 'deleted-comments', params ?? {}] as const,
 }
 
 export function useAdminReports(params?: {
@@ -163,5 +168,19 @@ export function useUnmuteChatroomUser(chatroomId: number) {
     onError: error => {
       handleAuthOrFKError(error)
     },
+  })
+}
+
+export function useAdminDeletedPosts(params?: PaginationParams) {
+  return useQuery({
+    queryKey: adminModerationKeys.deletedPosts(params),
+    queryFn: () => apiClient.getAdminDeletedPosts(params),
+  })
+}
+
+export function useAdminDeletedComments(params?: PaginationParams) {
+  return useQuery({
+    queryKey: adminModerationKeys.deletedComments(params),
+    queryFn: () => apiClient.getAdminDeletedComments(params),
   })
 }
