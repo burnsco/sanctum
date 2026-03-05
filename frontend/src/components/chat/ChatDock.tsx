@@ -908,12 +908,13 @@ export function ChatDock() {
             aria-label='Open messages'
             onClick={handleButtonClick}
             className={cn(
-              'flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95',
+              'relative flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-4 text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95',
               totalUnread > 0 &&
                 'animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.5)]'
             )}
           >
-            <MessageCircle className='h-5 w-5' />
+            <MessageCircle className='h-5 w-5 shrink-0' />
+            <span className='text-sm font-semibold'>Messages</span>
             {totalUnread > 0 && (
               <span
                 data-testid='chat-dock-unread-badge'

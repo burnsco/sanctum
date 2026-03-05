@@ -45,8 +45,8 @@ export default function Friends() {
   const suggestions = useMemo(() => {
     if (!currentUser) return []
     const friendIds = new Set(friends.map(f => f.id))
-    const incomingIds = new Set(incomingRequests.map(r => r.sender_id))
-    const outgoingIds = new Set(outgoingRequests.map(r => r.receiver_id))
+    const incomingIds = new Set(incomingRequests.map(r => r.requester_id))
+    const outgoingIds = new Set(outgoingRequests.map(r => r.addressee_id))
     return allUsers.filter(
       user =>
         user.id !== currentUser.id &&
@@ -62,12 +62,12 @@ export default function Friends() {
         sendRequest.mutate(user.id)
         break
       case 'accept': {
-        const req = incomingRequests.find(r => r.sender_id === user.id)
+        const req = incomingRequests.find(r => r.requester_id === user.id)
         if (req) acceptRequest.mutate(req.id)
         break
       }
       case 'reject': {
-        const req = incomingRequests.find(r => r.sender_id === user.id)
+        const req = incomingRequests.find(r => r.requester_id === user.id)
         if (req) rejectRequest.mutate(req.id)
         break
       }
@@ -131,10 +131,10 @@ export default function Friends() {
 
             {activeView === 'requests' &&
               incomingRequests.map(req =>
-                req.sender ? (
+                req.requester ? (
                   <FriendCard
                     key={req.id}
-                    user={req.sender}
+                    user={req.requester}
                     actionType='accept_reject'
                     onAction={handleAction}
                   />

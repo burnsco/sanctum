@@ -44,8 +44,8 @@ export default function Users() {
     if (!currentUser) return []
 
     const friendIds = new Set(friends.map(f => f.id))
-    const incomingIds = new Set(incomingRequests.map(r => r.sender_id))
-    const outgoingIds = new Set(outgoingRequests.map(r => r.receiver_id))
+    const incomingIds = new Set(incomingRequests.map(r => r.requester_id))
+    const outgoingIds = new Set(outgoingRequests.map(r => r.addressee_id))
 
     return allUsers.filter(
       user =>
@@ -72,12 +72,12 @@ export default function Users() {
         break
       case 'accept': {
         // Find request ID
-        const reqToAccept = incomingRequests.find(r => r.sender_id === user.id)
+        const reqToAccept = incomingRequests.find(r => r.requester_id === user.id)
         if (reqToAccept) acceptRequestMutation.mutate(reqToAccept.id)
         break
       }
       case 'reject': {
-        const reqToReject = incomingRequests.find(r => r.sender_id === user.id)
+        const reqToReject = incomingRequests.find(r => r.requester_id === user.id)
         if (reqToReject) rejectRequestMutation.mutate(reqToReject.id)
         break
       }
@@ -139,10 +139,10 @@ export default function Users() {
 
             {activeView === 'requests' &&
               requestsList.map(req =>
-                req.sender ? (
+                req.requester ? (
                   <FriendCard
                     key={req.id}
-                    user={req.sender}
+                    user={req.requester}
                     actionType='accept_reject'
                     onAction={handleAction}
                   />

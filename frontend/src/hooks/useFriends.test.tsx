@@ -75,8 +75,8 @@ describe('useFriends hooks', () => {
       const requests = [
         {
           id: 1,
-          sender_id: 2,
-          receiver_id: 1,
+          requester_id: 2,
+          addressee_id: 1,
           status: 'pending' as const,
           created_at: '',
           updated_at: '',
@@ -100,8 +100,8 @@ describe('useFriends hooks', () => {
       const requests = [
         {
           id: 1,
-          sender_id: 1,
-          receiver_id: 2,
+          requester_id: 1,
+          addressee_id: 2,
           status: 'pending' as const,
           created_at: '',
           updated_at: '',

@@ -187,8 +187,8 @@ export function buildFriendRequest(
 ): FriendRequest {
   return {
     id: 1,
-    sender_id: 1,
-    receiver_id: 2,
+    requester_id: 1,
+    addressee_id: 2,
     status: 'pending',
     created_at: now(),
     updated_at: now(),

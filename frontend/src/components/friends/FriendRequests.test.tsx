@@ -61,8 +61,8 @@ describe('FriendRequestList', () => {
     const incoming = [
       buildFriendRequest({
         id: 1,
-        sender_id: 2,
-        sender: buildUser({ id: 2, username: 'bob' }),
+        requester_id: 2,
+        requester: buildUser({ id: 2, username: 'bob' }),
       }),
     ]
     vi.mocked(usePendingRequestsHook).mockReturnValue({

@@ -81,13 +81,13 @@ export interface Comment {
 
 export interface FriendRequest {
   id: number
-  sender_id: number
-  receiver_id: number
+  requester_id: number
+  addressee_id: number
   status: 'pending' | 'accepted' | 'rejected'
   created_at: string
   updated_at: string
-  sender?: User
-  receiver?: User
+  requester?: User
+  addressee?: User
 }
 
 export interface FriendshipStatus {

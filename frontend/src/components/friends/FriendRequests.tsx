@@ -45,17 +45,17 @@ export function FriendRequestList() {
                 <CardHeader className='pb-2'>
                   <CardTitle className='text-base flex items-center gap-2'>
                     <div className='h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary'>
-                      {req.sender?.avatar ? (
+                      {req.requester?.avatar ? (
                         <img
-                          src={req.sender.avatar}
-                          alt={req.sender.username}
+                          src={req.requester.avatar}
+                          alt={req.requester.username}
                           className='h-8 w-8 rounded-full object-cover'
                         />
                       ) : (
-                        req.sender?.username?.[0].toUpperCase()
+                        req.requester?.username?.[0].toUpperCase()
                       )}
                     </div>
-                    {req.sender?.username}
+                    {req.requester?.username}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -96,17 +96,17 @@ export function FriendRequestList() {
                 <CardHeader className='pb-2'>
                   <CardTitle className='text-base flex items-center gap-2'>
                     <div className='h-8 w-8 rounded-full bg-muted flex items-center justify-center text-sm font-semibold text-muted-foreground'>
-                      {req.receiver?.avatar ? (
+                      {req.addressee?.avatar ? (
                         <img
-                          src={req.receiver.avatar}
-                          alt={req.receiver.username}
+                          src={req.addressee.avatar}
+                          alt={req.addressee.username}
                           className='h-8 w-8 rounded-full object-cover'
                         />
                       ) : (
-                        req.receiver?.username?.[0].toUpperCase()
+                        req.addressee?.username?.[0].toUpperCase()
                       )}
                     </div>
-                    {req.receiver?.username}
+                    {req.addressee?.username}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
