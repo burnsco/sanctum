@@ -15,6 +15,7 @@ import (
 	_ "sanctum/docs" // swagger docs
 	"sanctum/internal/cache"
 	"sanctum/internal/config"
+	"sanctum/internal/moderation"
 	"sanctum/internal/database"
 	"sanctum/internal/featureflags"
 	"sanctum/internal/middleware"
@@ -155,6 +156,17 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	server.userService = service.NewUserService(server.userRepo)
 	server.moderationService = service.NewModerationService(server.db)
 	server.gameService = service.NewGameService(server.gameRepo)
+
+	if cfg.OpenAIModerationKey != "" {
+		mod := moderation.NewOpenAI(cfg.OpenAIModerationKey)
+		strikeTracker := service.NewGORMStrikeTracker(db)
+		server.postService.SetModerator(mod)
+		server.postService.SetStrikeTracker(strikeTracker)
+		server.commentService.SetModerator(mod)
+		server.commentService.SetStrikeTracker(strikeTracker)
+		server.imageService.SetModerator(mod)
+		log.Println("[moderation] OpenAI content moderation enabled (posts, comments, and image uploads)")
+	}
 	// NOTE: built-in sanctum seeding is intentionally NOT performed here.
 	// Seeding should be explicit during runtime bootstrap (cmd) or test setup.
 
@@ -236,6 +248,17 @@ func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Clien
 	server.userService = service.NewUserService(server.userRepo)
 	server.moderationService = service.NewModerationService(server.db)
 	server.gameService = service.NewGameService(server.gameRepo)
+
+	if cfg.OpenAIModerationKey != "" {
+		mod := moderation.NewOpenAI(cfg.OpenAIModerationKey)
+		strikeTracker := service.NewGORMStrikeTracker(db)
+		server.postService.SetModerator(mod)
+		server.postService.SetStrikeTracker(strikeTracker)
+		server.commentService.SetModerator(mod)
+		server.commentService.SetStrikeTracker(strikeTracker)
+		server.imageService.SetModerator(mod)
+		log.Println("[moderation] OpenAI content moderation enabled (posts, comments, and image uploads)")
+	}
 
 	// Initialize notifier and hub if Redis is available
 	if redisClient != nil {
@@ -509,6 +532,8 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	admin.Get("/users/:id", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminUserDetail)
 	admin.Post("/users/:id/ban", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.BanUser)
 	admin.Post("/users/:id/unban", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.UnbanUser)
+	admin.Get("/deleted-posts", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminDeletedPosts)
+	admin.Get("/deleted-comments", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminDeletedComments)
 	adminSanctumRequests := admin.Group("/sanctum-requests")
 	adminSanctumRequests.Get("/", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 30, time.Minute, middleware.FailClosed, "admin_read"), s.GetAdminSanctumRequests)
 	adminSanctumRequests.Post("/:id/approve", middleware.RateLimitWithPolicy(s.redis, s.config.Env, 10, 5*time.Minute, middleware.FailClosed, "admin_write"), s.ApproveSanctumRequest)

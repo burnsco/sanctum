@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -20,6 +21,7 @@ import (
 	"time"
 
 	"sanctum/internal/config"
+	"sanctum/internal/moderation"
 	"sanctum/internal/models"
 	"sanctum/internal/observability"
 	"sanctum/internal/repository"
@@ -79,7 +81,11 @@ type ImageService struct {
 	uploadDir          string
 	maxUploadSizeBytes int64
 	workerOnce         sync.Once
+	moderator          moderation.Moderator
 }
+
+// SetModerator wires a content moderator for checking images at upload time.
+func (s *ImageService) SetModerator(m moderation.Moderator) { s.moderator = m }
 
 // NewImageService returns a new ImageService.
 func NewImageService(repo repository.ImageRepository, cfg *config.Config) *ImageService {
@@ -151,6 +157,14 @@ func (s *ImageService) Upload(ctx context.Context, in UploadImageInput) (*models
 	if err != nil {
 		return nil, models.NewInternalError(err)
 	}
+
+	if s.moderator != nil {
+		dataURL := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(encodedMasterJPG)
+		if err := s.moderator.CheckWithImage(ctx, "", dataURL); err != nil {
+			return nil, models.NewValidationError("Image contains inappropriate content")
+		}
+	}
+
 	encodedMasterWebP, err := encodeWebP(master, WebPQuality)
 	if err != nil {
 		return nil, models.NewInternalError(err)

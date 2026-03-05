@@ -13,6 +13,7 @@ import {
 } from 'react-router-dom'
 import { BottomBar } from '@/components/BottomBar'
 import { ChatDock } from '@/components/chat/ChatDock'
+import { ModerationWarningModal } from '@/components/ModerationWarningModal'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { GameCapsuleDock } from '@/components/games/GameCapsuleDock'
 import { MobileHeader } from '@/components/MobileHeader'
@@ -64,6 +65,9 @@ const AdminBanRequests = lazy(() => import('@/pages/admin/AdminBanRequests'))
 const AdminUsers = lazy(() => import('@/pages/admin/AdminUsers'))
 const AdminUserDetail = lazy(() => import('@/pages/admin/AdminUserDetail'))
 const AdminRoomMutes = lazy(() => import('@/pages/admin/AdminRoomMutes'))
+const AdminDeletedContent = lazy(
+  () => import('@/pages/admin/AdminDeletedContent')
+)
 const AdminPlaceholder = lazy(() => import('@/pages/admin/AdminPlaceholder'))
 const OnboardingSanctums = lazy(() => import('@/pages/OnboardingSanctums'))
 const SanctumFeed = lazy(() => import('@/pages/SanctumFeed'))
@@ -463,6 +467,7 @@ function RoutesWithPrefetch() {
           <Route path='users' element={<AdminUsers />} />
           <Route path='users/:id' element={<AdminUserDetail />} />
           <Route path='room-mutes' element={<AdminRoomMutes />} />
+          <Route path='deleted' element={<AdminDeletedContent />} />
           <Route path='sanctum-requests' element={<AdminSanctumRequests />} />
           <Route
             path='user-lists'
@@ -570,6 +575,7 @@ export default function App() {
           </ErrorBoundary>
         </MainLayout>
         <Toaster />
+        <ModerationWarningModal />
       </ChatProvider>
     </Router>
   )

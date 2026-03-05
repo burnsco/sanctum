@@ -3,6 +3,8 @@ import { logger } from '../lib/logger'
 import { useAuthSessionStore } from '../stores/useAuthSessionStore'
 import type {
   AdminBanRequest,
+  AdminDeletedComment,
+  AdminDeletedPost,
   AdminSanctumRequestActionResponse,
   AdminSanctumRequestStatus,
   AdminUserDetailResponse,
@@ -53,7 +55,9 @@ export class ApiError extends Error {
     message: string,
     public status?: number,
     public code?: string,
-    public requestId?: string
+    public requestId?: string,
+    public strikes?: number,
+    public isBanned?: boolean
   ) {
     super(message)
     this.name = 'ApiError'
@@ -177,12 +181,16 @@ class ApiClient {
 
         let errMsg = `HTTP ${response.status}: ${response.statusText}`
         let code: string | undefined
+        let strikes: number | undefined
+        let isBanned: boolean | undefined
 
         try {
           const parsed = text ? JSON.parse(text) : null
           if (parsed && typeof parsed === 'object') {
             if (parsed.error) errMsg = parsed.error
             if (parsed.code) code = parsed.code
+            if (typeof parsed.strikes === 'number') strikes = parsed.strikes
+            if (typeof parsed.is_banned === 'boolean') isBanned = parsed.is_banned
           }
         } catch (_) {
           if (text) errMsg = text
@@ -194,7 +202,7 @@ class ApiClient {
           requestId,
         })
 
-        throw new ApiError(errMsg, response.status, code, requestId)
+        throw new ApiError(errMsg, response.status, code, requestId, strikes, isBanned)
       }
 
       logger.debug(`API Success: ${method} ${endpoint}`)
@@ -910,6 +918,28 @@ class ApiClient {
     return this.request(`/admin/users/${id}/unban`, {
       method: 'POST',
     })
+  }
+
+  async getAdminDeletedPosts(
+    params?: PaginationParams
+  ): Promise<AdminDeletedPost[]> {
+    const query = new URLSearchParams()
+    if (params?.offset !== undefined)
+      query.set('offset', params.offset.toString())
+    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
+    const queryString = query.toString() ? `?${query.toString()}` : ''
+    return this.request(`/admin/deleted-posts${queryString}`)
+  }
+
+  async getAdminDeletedComments(
+    params?: PaginationParams
+  ): Promise<AdminDeletedComment[]> {
+    const query = new URLSearchParams()
+    if (params?.offset !== undefined)
+      query.set('offset', params.offset.toString())
+    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
+    const queryString = query.toString() ? `?${query.toString()}` : ''
+    return this.request(`/admin/deleted-comments${queryString}`)
   }
 
   // Games

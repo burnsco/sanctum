@@ -10,6 +10,27 @@ import (
 	"gorm.io/gorm"
 )
 
+// DeletedPostRow is a minimal row for admin deleted-posts listing (no content/title/image).
+type DeletedPostRow struct {
+	ID        uint       `json:"id"`
+	UserID    uint       `json:"user_id"`
+	Username  string     `json:"username"`
+	PostType  string     `json:"post_type"`
+	SanctumID *uint      `json:"sanctum_id,omitempty"`
+	CreatedAt time.Time  `json:"created_at"`
+	DeletedAt *time.Time `json:"deleted_at"`
+}
+
+// DeletedCommentRow is a minimal row for admin deleted-comments listing (no content).
+type DeletedCommentRow struct {
+	ID        uint       `json:"id"`
+	UserID    uint       `json:"user_id"`
+	Username  string     `json:"username"`
+	PostID    uint       `json:"post_id"`
+	CreatedAt time.Time  `json:"created_at"`
+	DeletedAt *time.Time `json:"deleted_at"`
+}
+
 // BanRequestRow is a row for admin ban-request listing.
 type BanRequestRow struct {
 	ReportedUserID uint        `json:"reported_user_id"`
@@ -138,4 +159,80 @@ func (s *ModerationService) GetAdminUserDetail(ctx context.Context, userID uint)
 	}
 
 	return detail, nil
+}
+
+// GetAdminDeletedPosts returns deleted posts (soft-deleted) for admin listing.
+func (s *ModerationService) GetAdminDeletedPosts(ctx context.Context, limit, offset int) ([]DeletedPostRow, error) {
+	type rawPost struct {
+		ID        uint       `gorm:"column:id"`
+		UserID    uint       `gorm:"column:user_id"`
+		Username  string     `gorm:"column:username"`
+		PostType  string     `gorm:"column:post_type"`
+		SanctumID *uint      `gorm:"column:sanctum_id"`
+		CreatedAt time.Time  `gorm:"column:created_at"`
+		DeletedAt *time.Time `gorm:"column:deleted_at"`
+	}
+	var rows []rawPost
+	if err := s.db.WithContext(ctx).
+		Unscoped().
+		Table("posts").
+		Select("posts.id, posts.user_id, users.username, posts.post_type, posts.sanctum_id, posts.created_at, posts.deleted_at").
+		Joins("LEFT JOIN users ON users.id = posts.user_id").
+		Where("posts.deleted_at IS NOT NULL").
+		Order("posts.deleted_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	result := make([]DeletedPostRow, 0, len(rows))
+	for _, r := range rows {
+		result = append(result, DeletedPostRow{
+			ID:        r.ID,
+			UserID:    r.UserID,
+			Username:  r.Username,
+			PostType:  r.PostType,
+			SanctumID: r.SanctumID,
+			CreatedAt: r.CreatedAt,
+			DeletedAt: r.DeletedAt,
+		})
+	}
+	return result, nil
+}
+
+// GetAdminDeletedComments returns deleted comments (soft-deleted) for admin listing.
+func (s *ModerationService) GetAdminDeletedComments(ctx context.Context, limit, offset int) ([]DeletedCommentRow, error) {
+	type rawComment struct {
+		ID        uint       `gorm:"column:id"`
+		UserID    uint       `gorm:"column:user_id"`
+		Username  string     `gorm:"column:username"`
+		PostID    uint       `gorm:"column:post_id"`
+		CreatedAt time.Time  `gorm:"column:created_at"`
+		DeletedAt *time.Time `gorm:"column:deleted_at"`
+	}
+	var rows []rawComment
+	if err := s.db.WithContext(ctx).
+		Unscoped().
+		Table("comments").
+		Select("comments.id, comments.user_id, users.username, comments.post_id, comments.created_at, comments.deleted_at").
+		Joins("LEFT JOIN users ON users.id = comments.user_id").
+		Where("comments.deleted_at IS NOT NULL").
+		Order("comments.deleted_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+	result := make([]DeletedCommentRow, 0, len(rows))
+	for _, r := range rows {
+		result = append(result, DeletedCommentRow{
+			ID:        r.ID,
+			UserID:    r.UserID,
+			Username:  r.Username,
+			PostID:    r.PostID,
+			CreatedAt: r.CreatedAt,
+			DeletedAt: r.DeletedAt,
+		})
+	}
+	return result, nil
 }

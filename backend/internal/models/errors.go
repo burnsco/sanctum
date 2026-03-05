@@ -76,6 +76,34 @@ func NewForbiddenError(message string) *AppError {
 	}
 }
 
+// ModerationViolationError is returned when automated moderation rejects content.
+// It carries the user's updated strike count and whether the account was auto-banned.
+type ModerationViolationError struct {
+	AppError
+	Strikes  int  `json:"strikes"`
+	IsBanned bool `json:"is_banned"`
+}
+
+func (e *ModerationViolationError) Error() string {
+	return e.AppError.Error()
+}
+
+func (e *ModerationViolationError) Unwrap() error {
+	return e.AppError.Unwrap()
+}
+
+// NewModerationViolationError creates a moderation violation error with strike info.
+func NewModerationViolationError(message string, strikes int, isBanned bool) *ModerationViolationError {
+	return &ModerationViolationError{
+		AppError: AppError{
+			Code:    "MODERATION_VIOLATION",
+			Message: message,
+		},
+		Strikes:  strikes,
+		IsBanned: isBanned,
+	}
+}
+
 // IsSchemaMissingError reports whether err indicates a missing table/column relation.
 func IsSchemaMissingError(err error) bool {
 	if err == nil {
@@ -89,9 +117,6 @@ func IsSchemaMissingError(err error) bool {
 
 // RespondWithError creates a standardized error response
 func RespondWithError(c *fiber.Ctx, status int, err error) error {
-	var response ErrorResponse
-	var appErr *AppError
-
 	rid := ""
 	if val := c.Locals("requestid"); val != nil {
 		rid = fmt.Sprintf("%v", val)
@@ -99,6 +124,21 @@ func RespondWithError(c *fiber.Ctx, status int, err error) error {
 
 	env, _ := c.Locals("env").(string)
 	isDev := env == "development" || env == ""
+
+	// ModerationViolationError carries extra fields for the client popup.
+	var modErr *ModerationViolationError
+	if errors.As(err, &modErr) {
+		return c.Status(status).JSON(fiber.Map{
+			"error":      modErr.AppError.Message,
+			"code":       modErr.AppError.Code,
+			"strikes":    modErr.Strikes,
+			"is_banned":  modErr.IsBanned,
+			"request_id": rid,
+		})
+	}
+
+	var response ErrorResponse
+	var appErr *AppError
 
 	if errors.As(err, &appErr) {
 		response = ErrorResponse{

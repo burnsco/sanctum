@@ -8,6 +8,7 @@ import type {
   UpdateCommentRequest,
 } from '../api/types'
 import { handleAuthOrFKError } from '../lib/handleAuthOrFKError'
+import { handleModerationError } from '../lib/handleModerationError'
 
 // Query keys
 export const commentKeys = {
@@ -36,6 +37,7 @@ export function useCreateComment(postId: number) {
       queryClient.invalidateQueries({ queryKey: commentKeys.list(postId) })
     },
     onError: error => {
+      if (handleModerationError(error)) return
       handleAuthOrFKError(error)
     },
   })

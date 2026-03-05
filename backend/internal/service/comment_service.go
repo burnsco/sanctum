@@ -2,17 +2,27 @@ package service
 
 import (
 	"context"
+	"fmt"
 
+	"sanctum/internal/moderation"
 	"sanctum/internal/models"
 	"sanctum/internal/repository"
 )
 
 // CommentService provides comment business logic.
 type CommentService struct {
-	commentRepo repository.CommentRepository
-	postRepo    repository.PostRepository
-	isAdmin     func(ctx context.Context, userID uint) (bool, error)
+	commentRepo   repository.CommentRepository
+	postRepo      repository.PostRepository
+	isAdmin       func(ctx context.Context, userID uint) (bool, error)
+	moderator     moderation.Moderator
+	strikeTracker StrikeTracker
 }
+
+// SetModerator sets an optional content moderator on the service.
+func (s *CommentService) SetModerator(m moderation.Moderator) { s.moderator = m }
+
+// SetStrikeTracker sets the strike tracker used to record moderation violations.
+func (s *CommentService) SetStrikeTracker(t StrikeTracker) { s.strikeTracker = t }
 
 // CreateCommentInput is the input for creating a comment.
 type CreateCommentInput struct {
@@ -59,6 +69,19 @@ func (s *CommentService) CreateComment(ctx context.Context, in CreateCommentInpu
 	}
 	if len(in.Content) > maxCommentLen {
 		return nil, models.NewValidationError("Comment too long (max 10000 characters)")
+	}
+
+	if s.moderator != nil {
+		if err := s.moderator.Check(ctx, in.Content); err != nil {
+			if s.strikeTracker != nil {
+				strikes, isBanned, strikeErr := s.strikeTracker.RecordStrike(ctx, in.UserID)
+				if strikeErr != nil {
+					return nil, fmt.Errorf("recording moderation strike: %w", strikeErr)
+				}
+				return nil, models.NewModerationViolationError(err.Error(), strikes, isBanned)
+			}
+			return nil, models.NewValidationError(err.Error())
+		}
 	}
 
 	comment := &models.Comment{

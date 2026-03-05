@@ -17,6 +17,7 @@ import type {
   UpdatePostRequest,
 } from '../api/types'
 import { handleAuthOrFKError } from '../lib/handleAuthOrFKError'
+import { handleModerationError } from '../lib/handleModerationError'
 import { useMySanctumMemberships } from './useSanctums'
 
 // Query keys
@@ -201,6 +202,7 @@ export function useCreatePost() {
       queryClient.invalidateQueries({ queryKey: postKeys.lists() })
     },
     onError: error => {
+      if (handleModerationError(error)) return
       handleAuthOrFKError(error)
     },
   })
@@ -251,9 +253,24 @@ export function useDeletePost() {
   return useMutation({
     mutationFn: (postId: number) => apiClient.deletePost(postId),
     onSuccess: (_data, postId) => {
-      // Remove from cache
+      // Remove detail cache
       queryClient.removeQueries({ queryKey: postKeys.detail(postId) })
-      // Invalidate lists
+      // Remove post from infinite list caches immediately
+      const infiniteQueries = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ['posts', 'infinite'] })
+      for (const query of infiniteQueries) {
+        queryClient.setQueryData<
+          { pages: Post[][]; pageParams: unknown[] } | undefined
+        >(query.queryKey, old => {
+          if (!old) return old
+          return {
+            ...old,
+            pages: old.pages.map(page => page.filter(p => p.id !== postId)),
+          }
+        })
+      }
+      // Invalidate paginated lists
       queryClient.invalidateQueries({ queryKey: postKeys.lists() })
     },
     onError: error => {

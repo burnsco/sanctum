@@ -49,6 +49,7 @@ type Config struct {
 	OTELServiceName               string  `mapstructure:"OTEL_SERVICE_NAME"`
 	OTELTracesSamplerRatio        float64 `mapstructure:"OTEL_TRACES_SAMPLER_RATIO"`
 	EnableProxyHeader             bool    `mapstructure:"ENABLE_PROXY_HEADER"`
+	OpenAIModerationKey           string  `mapstructure:"OPENAI_MODERATION_KEY"`
 }
 
 // LoadConfig loads application configuration from file and environment variables.
@@ -123,6 +124,8 @@ func LoadConfig() (*Config, error) {
 	viper.SetDefault("OTEL_SERVICE_NAME", "sanctum-api")
 	viper.SetDefault("OTEL_TRACES_SAMPLER_RATIO", 1.0)
 	viper.SetDefault("ENABLE_PROXY_HEADER", false)
+	viper.SetDefault("OPENAI_MODERATION_KEY", "")
+	_ = viper.BindEnv("OPENAI_MODERATION_KEY", "OPENAI_MODERATION_KEY")
 
 	var config Config
 	if err := viper.Unmarshal(&config); err != nil {

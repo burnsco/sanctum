@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"sanctum/internal/cache"
+	"sanctum/internal/moderation"
 	"sanctum/internal/models"
 	"sanctum/internal/repository"
 
@@ -22,7 +23,11 @@ type ChatService struct {
 	db                  *gorm.DB
 	isAdmin             func(ctx context.Context, userID uint) (bool, error)
 	canModerateChatroom func(ctx context.Context, userID, roomID uint) (bool, error)
+	moderator           moderation.Moderator
 }
+
+// SetModerator sets an optional content moderator on the service.
+func (s *ChatService) SetModerator(m moderation.Moderator) { s.moderator = m }
 
 // CreateConversationInput is the input for creating a conversation.
 type CreateConversationInput struct {
@@ -163,6 +168,13 @@ func (s *ChatService) SendMessage(ctx context.Context, in SendMessageInput) (*mo
 	if len(in.Content) > maxMessageContentLen {
 		return nil, nil, models.NewValidationError("Message content too long (max 10000 characters)")
 	}
+
+	if s.moderator != nil {
+		if err := s.moderator.Check(ctx, in.Content); err != nil {
+			return nil, nil, models.NewValidationError(err.Error())
+		}
+	}
+
 	if in.MessageType == "" {
 		in.MessageType = "text"
 	}

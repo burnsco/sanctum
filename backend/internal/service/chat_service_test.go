@@ -9,6 +9,7 @@ import (
 	"sanctum/internal/repository"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -334,4 +335,59 @@ func TestChatService_RemoveParticipant_Authorization(t *testing.T) {
 	svcAdmin := NewChatService(repo, noopUserRepo(), db, isAdminAdmin, nil)
 	_, err = svcAdmin.RemoveParticipant(context.Background(), 1, 1, 3)
 	assert.NoError(t, err)
+}
+
+func newChatModerationFixture(t *testing.T) (repo repository.ChatRepository, userRepo repository.UserRepository, db *gorm.DB, u1 *models.User, convID uint) {
+	t.Helper()
+	db, _ = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	_ = db.AutoMigrate(&models.Conversation{}, &models.User{}, &models.ConversationParticipant{}, &models.Message{})
+	repo = repository.NewChatRepository(db)
+	userRepo = repository.NewUserRepository(db)
+	ctx := context.Background()
+	u1 = &models.User{Username: "sender", Email: "sender@e.com"}
+	db.Create(u1)
+	conv := &models.Conversation{IsGroup: true, Name: "room", CreatedBy: u1.ID}
+	_ = repository.NewChatRepository(db).CreateConversation(ctx, conv)
+	_ = repo.AddParticipant(ctx, conv.ID, u1.ID)
+	convID = conv.ID
+	return
+}
+
+func TestChatService_SendMessage_Moderation(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil moderator allows message", func(t *testing.T) {
+		t.Parallel()
+		repo, userRepo, db, u1, convID := newChatModerationFixture(t)
+		svc := NewChatService(repo, userRepo, db, nil, nil)
+		_, _, err := svc.SendMessage(context.Background(), SendMessageInput{
+			UserID: u1.ID, ConversationID: convID, Content: "hello",
+		})
+		assert.NoError(t, err)
+	})
+
+	t.Run("allow-all moderator allows message", func(t *testing.T) {
+		t.Parallel()
+		repo, userRepo, db, u1, convID := newChatModerationFixture(t)
+		svc := NewChatService(repo, userRepo, db, nil, nil)
+		svc.SetModerator(allowAllModerator())
+		_, _, err := svc.SendMessage(context.Background(), SendMessageInput{
+			UserID: u1.ID, ConversationID: convID, Content: "hello",
+		})
+		assert.NoError(t, err)
+	})
+
+	t.Run("flagged message returns validation error (no strike tracking in chat)", func(t *testing.T) {
+		t.Parallel()
+		repo, userRepo, db, u1, convID := newChatModerationFixture(t)
+		svc := NewChatService(repo, userRepo, db, nil, nil)
+		svc.SetModerator(blockAllModerator())
+		_, _, err := svc.SendMessage(context.Background(), SendMessageInput{
+			UserID: u1.ID, ConversationID: convID, Content: "bad content",
+		})
+		require.Error(t, err)
+		var appErr *models.AppError
+		require.True(t, errors.As(err, &appErr))
+		assert.Equal(t, "VALIDATION_ERROR", appErr.Code)
+	})
 }
