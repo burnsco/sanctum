@@ -190,7 +190,8 @@ class ApiClient {
             if (parsed.error) errMsg = parsed.error
             if (parsed.code) code = parsed.code
             if (typeof parsed.strikes === 'number') strikes = parsed.strikes
-            if (typeof parsed.is_banned === 'boolean') isBanned = parsed.is_banned
+            if (typeof parsed.is_banned === 'boolean')
+              isBanned = parsed.is_banned
           }
         } catch (_) {
           if (text) errMsg = text
@@ -202,7 +203,14 @@ class ApiClient {
           requestId,
         })
 
-        throw new ApiError(errMsg, response.status, code, requestId, strikes, isBanned)
+        throw new ApiError(
+          errMsg,
+          response.status,
+          code,
+          requestId,
+          strikes,
+          isBanned
+        )
       }
 
       logger.debug(`API Success: ${method} ${endpoint}`)

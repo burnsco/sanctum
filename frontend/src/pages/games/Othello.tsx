@@ -466,8 +466,12 @@ export default function Othello() {
               />
               <div className='absolute inset-0 bg-gradient-to-t from-emerald-950/80 to-transparent' />
               <div className='absolute bottom-2 left-3'>
-                <p className='text-[10px] font-black uppercase tracking-widest text-emerald-400'>Mode</p>
-                <p className='text-sm font-black text-white italic uppercase'>Reversi Strategy</p>
+                <p className='text-[10px] font-black uppercase tracking-widest text-emerald-400'>
+                  Mode
+                </p>
+                <p className='text-sm font-black text-white italic uppercase'>
+                  Reversi Strategy
+                </p>
               </div>
             </div>
           </Card>

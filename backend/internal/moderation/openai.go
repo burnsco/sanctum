@@ -24,8 +24,8 @@ func NoOp() Moderator { return noOpModerator{} }
 
 type noOpModerator struct{}
 
-func (noOpModerator) Check(_ context.Context, _ string) error              { return nil }
-func (noOpModerator) CheckWithImage(_ context.Context, _, _ string) error  { return nil }
+func (noOpModerator) Check(_ context.Context, _ string) error             { return nil }
+func (noOpModerator) CheckWithImage(_ context.Context, _, _ string) error { return nil }
 
 // OpenAI uses the OpenAI Moderation API (free) to screen text content.
 // On API/network errors it fails open so a temporary outage doesn't block posts.

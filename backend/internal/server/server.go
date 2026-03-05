@@ -15,11 +15,11 @@ import (
 	_ "sanctum/docs" // swagger docs
 	"sanctum/internal/cache"
 	"sanctum/internal/config"
-	"sanctum/internal/moderation"
 	"sanctum/internal/database"
 	"sanctum/internal/featureflags"
 	"sanctum/internal/middleware"
 	"sanctum/internal/models"
+	"sanctum/internal/moderation"
 	"sanctum/internal/notifications"
 	"sanctum/internal/repository"
 	"sanctum/internal/service"

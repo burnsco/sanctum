@@ -339,8 +339,12 @@ export default function ConnectFour() {
               />
               <div className='absolute inset-0 bg-gradient-to-t from-blue-900/80 to-transparent' />
               <div className='absolute bottom-2 left-3'>
-                <p className='text-[10px] font-black uppercase tracking-widest text-blue-400'>Mode</p>
-                <p className='text-sm font-black text-white italic uppercase'>7x6 Gravity Match</p>
+                <p className='text-[10px] font-black uppercase tracking-widest text-blue-400'>
+                  Mode
+                </p>
+                <p className='text-sm font-black text-white italic uppercase'>
+                  7x6 Gravity Match
+                </p>
               </div>
             </div>
           </Card>

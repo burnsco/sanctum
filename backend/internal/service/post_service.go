@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"sanctum/internal/cache"
-	"sanctum/internal/moderation"
 	"sanctum/internal/models"
+	"sanctum/internal/moderation"
 	"sanctum/internal/repository"
 )
 

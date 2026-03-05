@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"sanctum/internal/moderation"
 	"sanctum/internal/models"
+	"sanctum/internal/moderation"
 	"sanctum/internal/repository"
 )
 

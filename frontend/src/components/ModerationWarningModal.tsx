@@ -44,11 +44,16 @@ export function ModerationWarningModal() {
         <div className='space-y-4 text-center'>
           {!isBanned && (
             <div className='mx-auto flex w-fit items-center gap-1.5 rounded-full border border-destructive/40 bg-destructive/10 px-4 py-1.5'>
-              {Array.from({ length: MAX_STRIKES }).map((_, i) => (
+              {Array.from(
+                { length: MAX_STRIKES },
+                (_, strikeNumber) => strikeNumber + 1
+              ).map(strikeNumber => (
                 <span
-                  key={i}
+                  key={strikeNumber}
                   className={`h-3 w-3 rounded-full transition-colors ${
-                    i < strikes ? 'bg-destructive' : 'bg-muted-foreground/30'
+                    strikeNumber <= strikes
+                      ? 'bg-destructive'
+                      : 'bg-muted-foreground/30'
                   }`}
                 />
               ))}

@@ -862,8 +862,12 @@ export default function Battleship() {
               />
               <div className='absolute inset-0 bg-gradient-to-t from-teal-900/80 to-transparent' />
               <div className='absolute bottom-2 left-3'>
-                <p className='text-[10px] font-black uppercase tracking-widest text-teal-400'>Mode</p>
-                <p className='text-sm font-black text-white italic uppercase'>Naval Warfare</p>
+                <p className='text-[10px] font-black uppercase tracking-widest text-teal-400'>
+                  Mode
+                </p>
+                <p className='text-sm font-black text-white italic uppercase'>
+                  Naval Warfare
+                </p>
               </div>
             </div>
           </Card>
