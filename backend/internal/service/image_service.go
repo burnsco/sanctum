@@ -160,7 +160,7 @@ func (s *ImageService) Upload(ctx context.Context, in UploadImageInput) (*models
 
 	if s.moderator != nil {
 		dataURL := "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(encodedMasterJPG)
-		if err := s.moderator.CheckWithImage(ctx, "", dataURL); err != nil {
+		if modErr := s.moderator.CheckWithImage(ctx, "", dataURL); modErr != nil {
 			return nil, models.NewValidationError("Image contains inappropriate content")
 		}
 	}

@@ -119,12 +119,14 @@ func (m *OpenAI) CheckWithImage(ctx context.Context, text, imageURL string) erro
 	req.Header.Set("Authorization", "Bearer "+m.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := m.client.Do(req)
+	resp, err := m.client.Do(req) //nolint:gosec // G704: URL is hardcoded, safe from SSRF
 	if err != nil {
 		slog.WarnContext(ctx, "moderation API unreachable, failing open", "err", err)
 		return nil // fail open on network error
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		slog.WarnContext(ctx, "moderation API returned non-200, failing open", "status", resp.StatusCode)

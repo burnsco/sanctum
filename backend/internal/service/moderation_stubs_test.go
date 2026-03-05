@@ -66,30 +66,13 @@ func assertModerationViolationError(t interface {
 	Errorf(format string, args ...interface{})
 	FailNow()
 }, err error, wantStrikes int, wantBanned bool) {
-	type helperT interface {
-		Helper()
-		Errorf(format string, args ...interface{})
-		FailNow()
-	}
-
 	if err == nil {
 		t.Helper()
 		t.Errorf("expected ModerationViolationError, got nil")
 		t.FailNow()
 	}
 	var modErr *models.ModerationViolationError
-	found := false
-	// Walk the chain manually since errors.As works on interfaces.
-	e := err
-	for e != nil {
-		if me, ok := e.(*models.ModerationViolationError); ok {
-			modErr = me
-			found = true
-			break
-		}
-		e = errors.Unwrap(e)
-	}
-	if !found {
+	if !errors.As(err, &modErr) {
 		t.Helper()
 		t.Errorf("expected *models.ModerationViolationError, got %T: %v", err, err)
 		t.FailNow()

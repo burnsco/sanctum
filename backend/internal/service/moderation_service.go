@@ -187,15 +187,7 @@ func (s *ModerationService) GetAdminDeletedPosts(ctx context.Context, limit, off
 	}
 	result := make([]DeletedPostRow, 0, len(rows))
 	for _, r := range rows {
-		result = append(result, DeletedPostRow{
-			ID:        r.ID,
-			UserID:    r.UserID,
-			Username:  r.Username,
-			PostType:  r.PostType,
-			SanctumID: r.SanctumID,
-			CreatedAt: r.CreatedAt,
-			DeletedAt: r.DeletedAt,
-		})
+		result = append(result, DeletedPostRow(r))
 	}
 	return result, nil
 }
@@ -225,14 +217,7 @@ func (s *ModerationService) GetAdminDeletedComments(ctx context.Context, limit, 
 	}
 	result := make([]DeletedCommentRow, 0, len(rows))
 	for _, r := range rows {
-		result = append(result, DeletedCommentRow{
-			ID:        r.ID,
-			UserID:    r.UserID,
-			Username:  r.Username,
-			PostID:    r.PostID,
-			CreatedAt: r.CreatedAt,
-			DeletedAt: r.DeletedAt,
-		})
+		result = append(result, DeletedCommentRow(r))
 	}
 	return result, nil
 }

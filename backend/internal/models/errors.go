@@ -129,8 +129,8 @@ func RespondWithError(c *fiber.Ctx, status int, err error) error {
 	var modErr *ModerationViolationError
 	if errors.As(err, &modErr) {
 		return c.Status(status).JSON(fiber.Map{
-			"error":      modErr.AppError.Message,
-			"code":       modErr.AppError.Code,
+			"error":      modErr.Message,
+			"code":       modErr.Code,
 			"strikes":    modErr.Strikes,
 			"is_banned":  modErr.IsBanned,
 			"request_id": rid,
