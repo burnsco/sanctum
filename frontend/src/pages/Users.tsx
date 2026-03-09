@@ -72,12 +72,16 @@ export default function Users() {
         break
       case 'accept': {
         // Find request ID
-        const reqToAccept = incomingRequests.find(r => r.requester_id === user.id)
+        const reqToAccept = incomingRequests.find(
+          r => r.requester_id === user.id
+        )
         if (reqToAccept) acceptRequestMutation.mutate(reqToAccept.id)
         break
       }
       case 'reject': {
-        const reqToReject = incomingRequests.find(r => r.requester_id === user.id)
+        const reqToReject = incomingRequests.find(
+          r => r.requester_id === user.id
+        )
         if (reqToReject) rejectRequestMutation.mutate(reqToReject.id)
         break
       }
