@@ -203,13 +203,13 @@ export default function Games() {
                   className='group overflow-hidden border-2 transition-all hover:scale-[1.02] hover:shadow-2xl border-primary/20 hover:border-primary bg-card'
                 >
                   <CardContent className='p-0 flex flex-col h-full'>
-                    <div className='relative aspect-[4/5] overflow-hidden'>
+                    <div className='relative aspect-4/5 overflow-hidden'>
                       <img
                         src={game.image}
                         alt={game.name}
                         className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
                       />
-                      <div className='absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent' />
+                      <div className='absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent' />
                       <div className='absolute top-4 right-4 px-3 py-1 bg-primary text-primary-foreground text-[10px] font-black uppercase rounded-full shadow-lg'>
                         Live
                       </div>
