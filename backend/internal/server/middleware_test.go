@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
@@ -99,7 +98,7 @@ func TestServer_AuthRequired(t *testing.T) {
 			if tt.tokenParam != "" {
 				path += "?token=" + tt.tokenParam
 			}
-			req := httptest.NewRequest(http.MethodGet, path, nil)
+			req := newRequest(http.MethodGet, path, nil)
 			if tt.authHeader != "" {
 				req.Header.Set("Authorization", tt.authHeader)
 			}

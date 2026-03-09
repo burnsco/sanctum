@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -154,7 +153,7 @@ func TestLeaveGameRoomPublishesRealtimeUpdateToOriginalParticipants(t *testing.T
 		return s.LeaveGameRoom(c)
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/games/rooms/19/leave", nil)
+	req := newRequest(http.MethodPost, "/games/rooms/19/leave", nil)
 	resp, err := app.Test(req, 5000)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -211,7 +210,7 @@ func TestLeaveGameRoomAlreadyClosedDoesNotPublishRealtimeUpdate(t *testing.T) {
 		return s.LeaveGameRoom(c)
 	})
 
-	req := httptest.NewRequest(http.MethodPost, "/games/rooms/88/leave", nil)
+	req := newRequest(http.MethodPost, "/games/rooms/88/leave", nil)
 	resp, err := app.Test(req, 5000)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()

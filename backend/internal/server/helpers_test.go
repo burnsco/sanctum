@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"regexp"
 	"testing"
 
@@ -60,7 +59,7 @@ func TestParsePagination_Defaults(t *testing.T) {
 		return c.JSON(fiber.Map{"limit": p.Limit, "offset": p.Offset})
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/items", nil)
+	req := newRequest(http.MethodGet, "/items", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -79,7 +78,7 @@ func TestParsePagination_Custom(t *testing.T) {
 		return c.JSON(fiber.Map{"limit": p.Limit, "offset": p.Offset})
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/items?limit=10&offset=30", nil)
+	req := newRequest(http.MethodGet, "/items?limit=10&offset=30", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -112,7 +111,7 @@ func TestParsePagination_Clamping(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/items"+tt.query, nil)
+			req := newRequest(http.MethodGet, "/items"+tt.query, nil)
 			resp, err := app.Test(req)
 			require.NoError(t, err)
 			defer func() { _ = resp.Body.Close() }()
@@ -139,7 +138,7 @@ func TestParseID_ValidID(t *testing.T) {
 		return c.JSON(fiber.Map{"id": id})
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/items/42", nil)
+	req := newRequest(http.MethodGet, "/items/42", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -155,7 +154,7 @@ func TestParseID_InvalidNonNumeric(t *testing.T) {
 		return nil
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/items/abc", nil)
+	req := newRequest(http.MethodGet, "/items/abc", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -185,7 +184,7 @@ func TestParseID_ContextSpecificErrorMessage(t *testing.T) {
 				return nil
 			})
 
-			req := httptest.NewRequest(http.MethodGet, "/items/abc", nil)
+			req := newRequest(http.MethodGet, "/items/abc", nil)
 			resp, err := app.Test(req)
 			require.NoError(t, err)
 			defer func() { _ = resp.Body.Close() }()
@@ -210,7 +209,7 @@ func TestParseID_Zero(t *testing.T) {
 		return c.JSON(fiber.Map{"id": id})
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/items/0", nil)
+	req := newRequest(http.MethodGet, "/items/0", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -238,7 +237,7 @@ func TestIsAdmin_True(t *testing.T) {
 		return c.JSON(fiber.Map{"admin": admin})
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/check", nil)
+	req := newRequest(http.MethodGet, "/check", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -267,7 +266,7 @@ func TestIsAdmin_False(t *testing.T) {
 		return c.JSON(fiber.Map{"admin": admin})
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/check", nil)
+	req := newRequest(http.MethodGet, "/check", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -296,7 +295,7 @@ func TestIsAdmin_UserNotFound(t *testing.T) {
 		return c.SendStatus(fiber.StatusOK)
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/check", nil)
+	req := newRequest(http.MethodGet, "/check", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -324,7 +323,7 @@ func TestAdminRequired_AllowsAdmin(t *testing.T) {
 		return c.JSON(fiber.Map{"ok": true})
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/admin", nil)
+	req := newRequest(http.MethodGet, "/admin", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -350,7 +349,7 @@ func TestAdminRequired_RejectsNonAdmin(t *testing.T) {
 		return c.JSON(fiber.Map{"ok": true})
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/admin", nil)
+	req := newRequest(http.MethodGet, "/admin", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()

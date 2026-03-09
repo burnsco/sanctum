@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"sanctum/internal/models"
@@ -52,7 +51,7 @@ func TestGetUserProfile(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mockSetup()
-			req := httptest.NewRequest(http.MethodGet, "/users/"+tt.userIDParam, nil)
+			req := newRequest(http.MethodGet, "/users/"+tt.userIDParam, nil)
 			resp, _ := app.Test(req)
 			defer func() { _ = resp.Body.Close() }()
 			assert.Equal(t, tt.expectedStatus, resp.StatusCode)
@@ -74,7 +73,7 @@ func TestGetMyProfile(t *testing.T) {
 
 	mockRepo.On("GetByID", mock.Anything, uint(1)).Return(&models.User{ID: 1, Username: "me"}, nil)
 
-	req := httptest.NewRequest(http.MethodGet, "/users/me", nil)
+	req := newRequest(http.MethodGet, "/users/me", nil)
 	resp, _ := app.Test(req)
 	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)

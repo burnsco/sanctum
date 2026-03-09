@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/http/httptest"
 	"regexp"
 	"testing"
 	"time"
@@ -51,7 +50,7 @@ func TestGetGameRoomMessages_ReturnsPersistedMessages(t *testing.T) {
 	app := fiber.New()
 	app.Get("/games/rooms/:id/messages", s.GetGameRoomMessages)
 
-	req := httptest.NewRequest(http.MethodGet, "/games/rooms/55/messages", nil)
+	req := newRequest(http.MethodGet, "/games/rooms/55/messages", nil)
 	resp, err := app.Test(req, 5000)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -84,7 +83,7 @@ func TestGetGameRoomMessages_ReturnsNotFoundWhenRoomMissing(t *testing.T) {
 	app := fiber.New()
 	app.Get("/games/rooms/:id/messages", s.GetGameRoomMessages)
 
-	req := httptest.NewRequest(http.MethodGet, "/games/rooms/999/messages", nil)
+	req := newRequest(http.MethodGet, "/games/rooms/999/messages", nil)
 	resp, err := app.Test(req, 5000)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -114,7 +113,7 @@ func TestGetGameRoomMessages_ReturnsInternalErrorWhenQueryFails(t *testing.T) {
 	app := fiber.New()
 	app.Get("/games/rooms/:id/messages", s.GetGameRoomMessages)
 
-	req := httptest.NewRequest(http.MethodGet, "/games/rooms/23/messages", nil)
+	req := newRequest(http.MethodGet, "/games/rooms/23/messages", nil)
 	resp, err := app.Test(req, 5000)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()

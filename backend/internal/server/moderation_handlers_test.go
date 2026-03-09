@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"sanctum/internal/models"
@@ -57,7 +56,7 @@ func TestGetMyBlocks(t *testing.T) {
 	})
 
 	t.Run("empty list", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/blocks/me", nil)
+		req := newRequest(http.MethodGet, "/blocks/me", nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
@@ -74,7 +73,7 @@ func TestGetMyBlocks(t *testing.T) {
 
 	t.Run("with blocks", func(t *testing.T) {
 		db.Create(&models.UserBlock{BlockerID: user.ID, BlockedID: blocked.ID})
-		req := httptest.NewRequest(http.MethodGet, "/blocks/me", nil)
+		req := newRequest(http.MethodGet, "/blocks/me", nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		var blocks []models.UserBlock
@@ -107,7 +106,7 @@ func TestBlockUser(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/users/%d/block", target.ID), nil)
+		req := newRequest(http.MethodPost, fmt.Sprintf("/users/%d/block", target.ID), nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
@@ -120,7 +119,7 @@ func TestBlockUser(t *testing.T) {
 	})
 
 	t.Run("self-block prevention", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/users/%d/block", user.ID), nil)
+		req := newRequest(http.MethodPost, fmt.Sprintf("/users/%d/block", user.ID), nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode == http.StatusOK {
@@ -150,7 +149,7 @@ func TestUnblockUser(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/users/%d/block", target.ID), nil)
+		req := newRequest(http.MethodDelete, fmt.Sprintf("/users/%d/block", target.ID), nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
@@ -188,7 +187,7 @@ func TestReportUser(t *testing.T) {
 		if err != nil {
 			t.Fatalf("marshal body: %v", err)
 		}
-		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/users/%d/report", target.ID), bytes.NewReader(body))
+		req := newRequest(http.MethodPost, fmt.Sprintf("/users/%d/report", target.ID), bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
@@ -224,7 +223,7 @@ func TestReportPost(t *testing.T) {
 		if err != nil {
 			t.Fatalf("marshal body: %v", err)
 		}
-		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/posts/%d/report", post.ID), bytes.NewReader(body))
+		req := newRequest(http.MethodPost, fmt.Sprintf("/posts/%d/report", post.ID), bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
@@ -253,7 +252,7 @@ func TestGetAdminReports(t *testing.T) {
 	})
 
 	t.Run("list all", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/admin/reports", nil)
+		req := newRequest(http.MethodGet, "/admin/reports", nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
@@ -286,7 +285,7 @@ func TestResolveAdminReport(t *testing.T) {
 		if err != nil {
 			t.Fatalf("marshal body: %v", err)
 		}
-		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/reports/%d/resolve", report.ID), bytes.NewReader(body))
+		req := newRequest(http.MethodPost, fmt.Sprintf("/admin/reports/%d/resolve", report.ID), bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
@@ -317,7 +316,7 @@ func TestGetAdminBanRequests(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/admin/ban-requests", nil)
+		req := newRequest(http.MethodGet, "/admin/ban-requests", nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
@@ -345,7 +344,7 @@ func TestGetAdminUsers(t *testing.T) {
 	})
 
 	t.Run("list with filter", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/admin/users?q=target", nil)
+		req := newRequest(http.MethodGet, "/admin/users?q=target", nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
@@ -355,7 +354,7 @@ func TestGetAdminUsers(t *testing.T) {
 
 	t.Run("validation error - query too long", func(t *testing.T) {
 		longQ := "this_is_a_very_long_search_query_that_exceeds_sixty_four_characters_limit_1234567890"
-		req := httptest.NewRequest(http.MethodGet, "/admin/users?q="+longQ, nil)
+		req := newRequest(http.MethodGet, "/admin/users?q="+longQ, nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusBadRequest {
@@ -388,7 +387,7 @@ func TestBanUser(t *testing.T) {
 		if err != nil {
 			t.Fatalf("marshal body: %v", err)
 		}
-		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/users/%d/ban", target.ID), bytes.NewReader(body))
+		req := newRequest(http.MethodPost, fmt.Sprintf("/admin/users/%d/ban", target.ID), bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
@@ -403,7 +402,7 @@ func TestBanUser(t *testing.T) {
 	})
 
 	t.Run("self-ban prevention", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/users/%d/ban", admin.ID), nil)
+		req := newRequest(http.MethodPost, fmt.Sprintf("/admin/users/%d/ban", admin.ID), nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode == http.StatusOK {
@@ -432,7 +431,7 @@ func TestUnbanUser(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/admin/users/%d/unban", target.ID), nil)
+		req := newRequest(http.MethodPost, fmt.Sprintf("/admin/users/%d/unban", target.ID), nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {

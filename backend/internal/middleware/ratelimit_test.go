@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -101,7 +100,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 			return c.SendStatus(fiber.StatusOK)
 		})
 
-		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req := newRequest("/test")
 		resp, err := app.Test(req)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -115,7 +114,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 			return c.SendStatus(fiber.StatusOK)
 		})
 
-		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req := newRequest("/test")
 		resp, err := app.Test(req)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -129,7 +128,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 			return c.SendStatus(fiber.StatusOK)
 		})
 
-		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		req := newRequest("/test")
 		resp, err := app.Test(req)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -143,7 +142,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 			return c.SendStatus(fiber.StatusOK)
 		})
 
-		req := httptest.NewRequest(http.MethodGet, "/sensitive", nil)
+		req := newRequest("/sensitive")
 		resp, err := app.Test(req)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)

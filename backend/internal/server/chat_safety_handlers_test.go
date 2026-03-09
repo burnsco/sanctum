@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"sanctum/internal/models"
@@ -49,7 +48,7 @@ func TestGetMyMentions(t *testing.T) {
 	})
 
 	t.Run("empty", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/users/me/mentions", nil)
+		req := newRequest(http.MethodGet, "/users/me/mentions", nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
@@ -66,7 +65,7 @@ func TestGetMyMentions(t *testing.T) {
 		db.Create(&msg)
 		db.Create(&models.MessageMention{MessageID: msg.ID, MentionedUserID: user.ID, ConversationID: conv.ID})
 
-		req := httptest.NewRequest(http.MethodGet, "/users/me/mentions", nil)
+		req := newRequest(http.MethodGet, "/users/me/mentions", nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		var mentions []models.MessageMention

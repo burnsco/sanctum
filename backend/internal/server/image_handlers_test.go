@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"mime/multipart"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -43,7 +42,7 @@ func TestUploadAndServeImage(t *testing.T) {
 		t.Fatalf("close writer: %v", closeErr)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/api/images/upload", &body)
+	req := newRequest(http.MethodPost, "/api/images/upload", &body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	resp, reqErr := app.Test(req)
 	if reqErr != nil {
@@ -65,7 +64,7 @@ func TestUploadAndServeImage(t *testing.T) {
 		t.Fatalf("expected relative image URL, got %q", uploaded.URL)
 	}
 
-	serveReq := httptest.NewRequest(http.MethodGet, "/api/images/"+uploaded.Hash, nil)
+	serveReq := newRequest(http.MethodGet, "/api/images/"+uploaded.Hash, nil)
 	serveResp, err := app.Test(serveReq)
 	if err != nil {
 		t.Fatalf("serve request failed: %v", err)
@@ -88,7 +87,7 @@ func TestUploadImageMissingFile(t *testing.T) {
 	})
 	app.Post("/api/images/upload", s.UploadImage)
 
-	req := httptest.NewRequest(http.MethodPost, "/api/images/upload", nil)
+	req := newRequest(http.MethodPost, "/api/images/upload", nil)
 	resp, err := app.Test(req)
 	if err != nil {
 		t.Fatalf("upload request failed: %v", err)

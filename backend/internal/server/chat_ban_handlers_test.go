@@ -3,7 +3,6 @@ package server
 import (
 	"bytes"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"sanctum/internal/models"
@@ -68,7 +67,7 @@ func TestChatroomBanHandlers_CRUD(t *testing.T) {
 
 	t.Run("add ban removes participant", func(t *testing.T) {
 		body := []byte(`{"reason":"spam"}`)
-		req := httptest.NewRequest(http.MethodPost, "/chatrooms/1/bans/2", bytes.NewReader(body))
+		req := newRequest(http.MethodPost, "/chatrooms/1/bans/2", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := app.Test(req)
 		if err != nil {
@@ -99,7 +98,7 @@ func TestChatroomBanHandlers_CRUD(t *testing.T) {
 	})
 
 	t.Run("list bans", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/chatrooms/1/bans", nil)
+		req := newRequest(http.MethodGet, "/chatrooms/1/bans", nil)
 		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("app.Test: %v", err)
@@ -111,7 +110,7 @@ func TestChatroomBanHandlers_CRUD(t *testing.T) {
 	})
 
 	t.Run("remove ban", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodDelete, "/chatrooms/1/bans/2", nil)
+		req := newRequest(http.MethodDelete, "/chatrooms/1/bans/2", nil)
 		resp, err := app.Test(req)
 		if err != nil {
 			t.Fatalf("app.Test: %v", err)
@@ -159,7 +158,7 @@ func TestChatroomBanHandlers_ForbiddenWhenNotModerator(t *testing.T) {
 	})
 	app.Post("/chatrooms/:id/bans/:userId", s.AddChatroomBan)
 
-	req := httptest.NewRequest(http.MethodPost, "/chatrooms/1/bans/2", nil)
+	req := newRequest(http.MethodPost, "/chatrooms/1/bans/2", nil)
 	resp, err := app.Test(req)
 	if err != nil {
 		t.Fatalf("app.Test: %v", err)

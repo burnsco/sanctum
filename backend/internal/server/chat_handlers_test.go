@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"sanctum/internal/models"
@@ -120,7 +119,7 @@ func TestCreateConversation(t *testing.T) {
 			tt.mockSetup()
 			body, err := json.Marshal(tt.body)
 			assert.NoError(t, err)
-			req := httptest.NewRequest(http.MethodPost, "/conversations", bytes.NewReader(body))
+			req := newRequest(http.MethodPost, "/conversations", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
 			resp, _ := app.Test(req)

@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"sanctum/internal/models"
@@ -51,7 +50,7 @@ func TestGetSanctumAdmins(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/sanctums/%s/admins", sanctum.Slug), nil)
+		req := newRequest(http.MethodGet, fmt.Sprintf("/sanctums/%s/admins", sanctum.Slug), nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
@@ -83,7 +82,7 @@ func TestPromoteSanctumAdmin(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/sanctums/%s/admins/%d", sanctum.Slug, member.ID), nil)
+		req := newRequest(http.MethodPost, fmt.Sprintf("/sanctums/%s/admins/%d", sanctum.Slug, member.ID), nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
@@ -126,7 +125,7 @@ func TestDemoteSanctumAdmin(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/sanctums/%s/admins/%d", sanctum.Slug, mod.ID), nil)
+		req := newRequest(http.MethodDelete, fmt.Sprintf("/sanctums/%s/admins/%d", sanctum.Slug, mod.ID), nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
@@ -150,7 +149,7 @@ func TestDemoteSanctumAdmin(t *testing.T) {
 	})
 
 	t.Run("cannot demote owner", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/sanctums/%s/admins/%d", sanctum.Slug, owner.ID), nil)
+		req := newRequest(http.MethodDelete, fmt.Sprintf("/sanctums/%s/admins/%d", sanctum.Slug, owner.ID), nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode == http.StatusOK {

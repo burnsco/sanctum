@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"sanctum/internal/models"
@@ -69,7 +68,7 @@ func TestApproveSanctumRequestFlow(t *testing.T) {
 	app.Post("/admin/sanctum-requests/:id/approve", s.ApproveSanctumRequest)
 
 	body := []byte(`{"review_notes":"approved"}`)
-	httpReq := httptest.NewRequest(http.MethodPost, "/admin/sanctum-requests/1/approve", bytes.NewReader(body))
+	httpReq := newRequest(http.MethodPost, "/admin/sanctum-requests/1/approve", bytes.NewReader(body))
 	httpReq.Header.Set("Content-Type", "application/json")
 	resp, err := app.Test(httpReq)
 	if err != nil {
@@ -142,7 +141,7 @@ func TestApproveSanctumRequest_NonPendingFails(t *testing.T) {
 	})
 	app.Post("/admin/sanctum-requests/:id/approve", s.ApproveSanctumRequest)
 
-	httpReq := httptest.NewRequest(http.MethodPost, "/admin/sanctum-requests/1/approve", nil)
+	httpReq := newRequest(http.MethodPost, "/admin/sanctum-requests/1/approve", nil)
 	resp, err := app.Test(httpReq)
 	if err != nil {
 		t.Fatalf("app.Test: %v", err)
@@ -180,7 +179,7 @@ func TestApproveSanctumRequest_ReservedSlugFails(t *testing.T) {
 	})
 	app.Post("/admin/sanctum-requests/:id/approve", s.ApproveSanctumRequest)
 
-	httpReq := httptest.NewRequest(http.MethodPost, "/admin/sanctum-requests/1/approve", nil)
+	httpReq := newRequest(http.MethodPost, "/admin/sanctum-requests/1/approve", nil)
 	resp, err := app.Test(httpReq)
 	if err != nil {
 		t.Fatalf("app.Test: %v", err)
@@ -219,7 +218,7 @@ func TestApproveSanctumRequest_TakenSlugFails(t *testing.T) {
 	})
 	app.Post("/admin/sanctum-requests/:id/approve", s.ApproveSanctumRequest)
 
-	httpReq := httptest.NewRequest(http.MethodPost, "/admin/sanctum-requests/1/approve", nil)
+	httpReq := newRequest(http.MethodPost, "/admin/sanctum-requests/1/approve", nil)
 	resp, err := app.Test(httpReq)
 	if err != nil {
 		t.Fatalf("app.Test: %v", err)

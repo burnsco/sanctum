@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/gofiber/fiber/v2"
@@ -43,7 +42,7 @@ func TestStructuredLogger(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, tt.path, nil)
+			req := newRequest(tt.path)
 			resp, err := app.Test(req)
 			defer func() { _ = resp.Body.Close() }()
 			assert.NoError(t, err)

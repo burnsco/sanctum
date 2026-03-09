@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"sanctum/internal/config"
@@ -27,7 +26,7 @@ func TestSetupMiddleware_RateLimitedResponseIncludesCORSHeaders(t *testing.T) {
 
 	// Exhaust the limiter and assert the final response still carries CORS headers.
 	for i := 0; i < 100; i++ {
-		req := httptest.NewRequest(http.MethodGet, "/limited", nil)
+		req := newRequest(http.MethodGet, "/limited", nil)
 		req.Header.Set("Origin", "http://localhost:5173")
 		resp, err := app.Test(req, -1)
 		require.NoError(t, err)
@@ -35,7 +34,7 @@ func TestSetupMiddleware_RateLimitedResponseIncludesCORSHeaders(t *testing.T) {
 		_ = resp.Body.Close()
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/limited", nil)
+	req := newRequest(http.MethodGet, "/limited", nil)
 	req.Header.Set("Origin", "http://localhost:5173")
 	resp, err := app.Test(req, -1)
 	require.NoError(t, err)
@@ -60,7 +59,7 @@ func TestSetupMiddleware_PreflightBypassesLimiter(t *testing.T) {
 
 	// Saturate limiter using non-OPTIONS requests.
 	for i := 0; i < 100; i++ {
-		req := httptest.NewRequest(http.MethodPost, "/limited", nil)
+		req := newRequest(http.MethodPost, "/limited", nil)
 		req.Header.Set("Origin", "http://localhost:5173")
 		resp, err := app.Test(req, -1)
 		require.NoError(t, err)
@@ -69,7 +68,7 @@ func TestSetupMiddleware_PreflightBypassesLimiter(t *testing.T) {
 	}
 
 	// Verify POST is now rate-limited.
-	limitedReq := httptest.NewRequest(http.MethodPost, "/limited", nil)
+	limitedReq := newRequest(http.MethodPost, "/limited", nil)
 	limitedReq.Header.Set("Origin", "http://localhost:5173")
 	limitedResp, err := app.Test(limitedReq, -1)
 	require.NoError(t, err)
@@ -77,7 +76,7 @@ func TestSetupMiddleware_PreflightBypassesLimiter(t *testing.T) {
 	_ = limitedResp.Body.Close()
 
 	// Preflight should still pass and include CORS headers.
-	preflightReq := httptest.NewRequest(http.MethodOptions, "/limited", nil)
+	preflightReq := newRequest(http.MethodOptions, "/limited", nil)
 	preflightReq.Header.Set("Origin", "http://localhost:5173")
 	preflightReq.Header.Set("Access-Control-Request-Method", http.MethodPost)
 	preflightReq.Header.Set("Access-Control-Request-Headers", "authorization,content-type")

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"sanctum/internal/config"
@@ -159,7 +158,7 @@ func TestSignup(t *testing.T) {
 			tt.mockSetup()
 			body, err := json.Marshal(tt.body)
 			require.NoError(t, err)
-			req := httptest.NewRequest(http.MethodPost, "/signup", bytes.NewReader(body))
+			req := newRequest(http.MethodPost, "/signup", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
 			resp, err := app.Test(req, 5000)
@@ -234,7 +233,7 @@ func TestLogin(t *testing.T) {
 			tt.mockSetup()
 			body, err := json.Marshal(tt.body)
 			require.NoError(t, err)
-			req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewReader(body))
+			req := newRequest(http.MethodPost, "/login", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
 			resp, err := app.Test(req, 5000)
@@ -306,7 +305,7 @@ func TestRefresh(t *testing.T) {
 			tt.mockSetup()
 			body, err := json.Marshal(tt.body)
 			require.NoError(t, err)
-			req := httptest.NewRequest(http.MethodPost, "/refresh", bytes.NewReader(body))
+			req := newRequest(http.MethodPost, "/refresh", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
 			resp, err := app.Test(req, 5000)
@@ -337,7 +336,7 @@ func TestLogout(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		body, err := json.Marshal(map[string]string{"refresh_token": "some-token"})
 		require.NoError(t, err)
-		req := httptest.NewRequest(http.MethodPost, "/logout", bytes.NewReader(body))
+		req := newRequest(http.MethodPost, "/logout", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := app.Test(req, 5000)
@@ -349,7 +348,7 @@ func TestLogout(t *testing.T) {
 	t.Run("Empty Token", func(t *testing.T) {
 		body, err := json.Marshal(map[string]string{"refresh_token": ""})
 		require.NoError(t, err)
-		req := httptest.NewRequest(http.MethodPost, "/logout", bytes.NewReader(body))
+		req := newRequest(http.MethodPost, "/logout", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := app.Test(req, 5000)
@@ -364,7 +363,7 @@ func TestLogout(t *testing.T) {
 
 	t.Run("Malformed Body", func(t *testing.T) {
 		// Malformed JSON should return 400
-		req := httptest.NewRequest(http.MethodPost, "/logout", bytes.NewReader([]byte("{invalid")))
+		req := newRequest(http.MethodPost, "/logout", bytes.NewReader([]byte("{invalid")))
 		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := app.Test(req, 5000)

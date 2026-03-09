@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -51,7 +50,7 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Request WS path
-		req := httptest.NewRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		req := newRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
 		resp, err := app.Test(req)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -88,14 +87,14 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		assert.NoError(t, err)
 
 		// First pass -- consumes from Redis
-		req := httptest.NewRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		req := newRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
 		resp, err := app.Test(req)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		_ = resp.Body.Close()
 
 		// Second pass -- ticket is gone from Redis but in-process cache should work
-		req2 := httptest.NewRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		req2 := newRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
 		resp2, err := app.Test(req2)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp2.StatusCode, "Second pass should succeed via in-process cache")
@@ -124,13 +123,13 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		err := rdb.Set(ctx, key, userID, time.Minute).Err()
 		assert.NoError(t, err)
 
-		req := httptest.NewRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		req := newRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
 		resp, err := app.Test(req)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		_ = resp.Body.Close()
 
-		req2 := httptest.NewRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		req2 := newRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
 		resp2, err := otherApp.Test(req2)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp2.StatusCode, "Second pass should succeed from Redis consumed cache")
@@ -151,7 +150,7 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Request non-WS path
-		req := httptest.NewRequest(http.MethodGet, "/api/other?ticket="+ticket, nil)
+		req := newRequest(http.MethodGet, "/api/other?ticket="+ticket, nil)
 		resp, err := app.Test(req)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -164,7 +163,7 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 	})
 
 	t.Run("Invalid Ticket - WS Path returns 401", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/api/ws/test?ticket=invalid", nil)
+		req := newRequest(http.MethodGet, "/api/ws/test?ticket=invalid", nil)
 		resp, err := app.Test(req)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)

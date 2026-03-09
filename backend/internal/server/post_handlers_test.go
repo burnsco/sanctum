@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"sanctum/internal/models"
@@ -155,7 +154,7 @@ func TestCreatePost(t *testing.T) {
 			tt.mockSetup()
 			body, err := json.Marshal(tt.body)
 			assert.NoError(t, err)
-			req := httptest.NewRequest(http.MethodPost, "/posts", bytes.NewReader(body))
+			req := newRequest(http.MethodPost, "/posts", bytes.NewReader(body))
 			req.Header.Set("Content-Type", "application/json")
 
 			resp, _ := app.Test(req)
@@ -179,7 +178,7 @@ func TestVotePoll_MissingOptionID(t *testing.T) {
 
 	body, err := json.Marshal(map[string]interface{}{})
 	assert.NoError(t, err)
-	req := httptest.NewRequest(http.MethodPost, "/posts/1/poll/vote", bytes.NewReader(body))
+	req := newRequest(http.MethodPost, "/posts/1/poll/vote", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, _ := app.Test(req)

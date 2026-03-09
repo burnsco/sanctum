@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -18,7 +17,7 @@ func TestLivenessCheck(t *testing.T) {
 	s := &Server{}
 	app.Get("/health/live", s.LivenessCheck)
 
-	req := httptest.NewRequest(http.MethodGet, "/health/live", nil)
+	req := newRequest(http.MethodGet, "/health/live", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -53,7 +52,7 @@ func TestReadinessCheck_Healthy(t *testing.T) {
 	// Expect DB ping
 	mock.ExpectPing()
 
-	req := httptest.NewRequest(http.MethodGet, "/health/ready", nil)
+	req := newRequest(http.MethodGet, "/health/ready", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()
@@ -94,7 +93,7 @@ func TestReadinessCheck_UnhealthyDB(t *testing.T) {
 	// Expect DB ping to fail
 	mock.ExpectPing().WillReturnError(fiber.ErrInternalServerError)
 
-	req := httptest.NewRequest(http.MethodGet, "/health/ready", nil)
+	req := newRequest(http.MethodGet, "/health/ready", nil)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer func() { _ = resp.Body.Close() }()

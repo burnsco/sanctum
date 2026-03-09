@@ -1,7 +1,6 @@
 package server
 
 import (
-	"net/http/httptest"
 	"testing"
 
 	"sanctum/internal/middleware"
@@ -24,7 +23,7 @@ func TestSecurityMiddleware(t *testing.T) {
 	})
 
 	t.Run("Security Headers", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := newRequest("GET", "/test", nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 
@@ -35,7 +34,7 @@ func TestSecurityMiddleware(t *testing.T) {
 	})
 
 	t.Run("Structured Logging", func(t *testing.T) {
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := newRequest("GET", "/test", nil)
 		resp, _ := app.Test(req)
 		defer func() { _ = resp.Body.Close() }()
 		assert.Equal(t, fiber.StatusOK, resp.StatusCode)
@@ -55,7 +54,7 @@ func TestHealthCheckIsolated(t *testing.T) {
 		})
 	})
 
-	req := httptest.NewRequest("GET", "/health", nil)
+	req := newRequest("GET", "/health", nil)
 	resp, _ := app.Test(req)
 	defer func() { _ = resp.Body.Close() }()
 
