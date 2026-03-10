@@ -16,4 +16,4 @@ export const TEST_TIMEOUTS = {
 
   /** Maximum delay for exponential backoff in retry logic (10s) */
   RETRY_MAX: 10_000,
-} as const
+} as const;

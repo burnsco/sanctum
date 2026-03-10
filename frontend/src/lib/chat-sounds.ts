@@ -1,4 +1,4 @@
-import type { Conversation } from '@/api/types'
+import type { Conversation } from "@/api/types";
 
 /**
  * Pure helpers for when to play chat notification sounds.
@@ -12,16 +12,16 @@ import type { Conversation } from '@/api/types'
 export function shouldPlayNewMessageSoundForDM(
   isCurrentConversationGroup: boolean,
   messageSenderId: number,
-  currentUserId: number | undefined
+  currentUserId: number | undefined,
 ): boolean {
-  if (isCurrentConversationGroup) return false
-  if (currentUserId === undefined) return false
-  return messageSenderId !== currentUserId
+  if (isCurrentConversationGroup) return false;
+  if (currentUserId === undefined) return false;
+  return messageSenderId !== currentUserId;
 }
 
-type FriendDMConversationForSound = Pick<Conversation, 'is_group'> & {
-  is_friend_dm?: boolean
-}
+type FriendDMConversationForSound = Pick<Conversation, "is_group"> & {
+  is_friend_dm?: boolean;
+};
 
 /**
  * Play DM notification sound only when:
@@ -32,12 +32,12 @@ type FriendDMConversationForSound = Pick<Conversation, 'is_group'> & {
 export function shouldPlayFriendDMInMessagesView(
   conversation: FriendDMConversationForSound | null | undefined,
   isMessagesRoute: boolean,
-  prevUnreadCount: number
+  prevUnreadCount: number,
 ): boolean {
-  if (!isMessagesRoute) return false
-  if (prevUnreadCount !== 0) return false
-  if (!conversation || conversation.is_group) return false
-  return conversation.is_friend_dm === true
+  if (!isMessagesRoute) return false;
+  if (prevUnreadCount !== 0) return false;
+  if (!conversation || conversation.is_group) return false;
+  return conversation.is_friend_dm === true;
 }
 
 /**
@@ -49,11 +49,11 @@ export function shouldPlayFriendOnlineSound(
   status: string,
   currentUserId: number | undefined,
   notifiedUserIds: Set<number>,
-  friendIds: number[]
+  friendIds: number[],
 ): boolean {
-  const online = status === 'online' || status === 'connected'
-  if (!online) return false
-  if (currentUserId === undefined || userId === currentUserId) return false
-  if (notifiedUserIds.has(userId)) return false
-  return friendIds.includes(userId)
+  const online = status === "online" || status === "connected";
+  if (!online) return false;
+  if (currentUserId === undefined || userId === currentUserId) return false;
+  if (notifiedUserIds.has(userId)) return false;
+  return friendIds.includes(userId);
 }

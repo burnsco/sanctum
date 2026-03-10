@@ -1,5 +1,5 @@
 <p align="center">
-   ![Sanctum Logo](frontend/src/assets/images/logo.jpeg)
+   ![Sanctum Logo](frontend/public/favicon.svg)
 </p>
 
 # Sanctum

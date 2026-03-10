@@ -55,18 +55,16 @@ The helper builds `frontend/Dockerfile.e2e` and runs tests with host networking 
 Example:
 
 ```tsx
-import { renderHook, waitFor } from '@testing-library/react'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { createTestQueryClient } from '@/test/test-utils'
+import { renderHook, waitFor } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { createTestQueryClient } from "@/test/test-utils";
 
 const wrapper = ({ children }) => (
-  <QueryClientProvider client={createTestQueryClient()}>
-    {children}
-  </QueryClientProvider>
-)
+  <QueryClientProvider client={createTestQueryClient()}>{children}</QueryClientProvider>
+);
 
-const { result } = renderHook(() => useSanctums(), { wrapper })
-await waitFor(() => expect(result.current.isSuccess).toBe(true))
+const { result } = renderHook(() => useSanctums(), { wrapper });
+await waitFor(() => expect(result.current.isSuccess).toBe(true));
 ```
 
 ### Components

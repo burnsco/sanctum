@@ -1,7 +1,7 @@
-import '@testing-library/jest-dom'
+import "@testing-library/jest-dom";
 
 // Mock matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: (query: string) => ({
     matches: false,
@@ -13,30 +13,30 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: () => {},
     dispatchEvent: () => {},
   }),
-})
+});
 
 // Mock ResizeObserver
 globalThis.ResizeObserver = class ResizeObserver {
   constructor(cb: ResizeObserverCallback) {
-    this.cb = cb
+    this.cb = cb;
   }
-  cb: ResizeObserverCallback
+  cb: ResizeObserverCallback;
   observe() {}
   unobserve() {}
   disconnect() {}
-}
+};
 
 // Mock IntersectionObserver
 globalThis.IntersectionObserver = class IntersectionObserver {
-  readonly root: Element | Document | null = null
-  readonly rootMargin: string = ''
-  readonly thresholds: ReadonlyArray<number> = []
+  readonly root: Element | Document | null = null;
+  readonly rootMargin: string = "";
+  readonly thresholds: ReadonlyArray<number> = [];
 
   observe() {}
   unobserve() {}
   disconnect() {}
   takeRecords() {
-    return []
+    return [];
   }
   // Mocking intersection observer for tests
-} as unknown as typeof globalThis.IntersectionObserver
+} as unknown as typeof globalThis.IntersectionObserver;

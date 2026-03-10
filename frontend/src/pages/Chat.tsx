@@ -1,4 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ChevronLeft,
   ChevronRight,
@@ -14,19 +14,19 @@ import {
   Timer,
   Users,
   X,
-} from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { toast } from 'sonner'
-import type { Conversation, Message, User } from '@/api/types'
-import { MessageList } from '@/components/chat/MessageList'
-import { ParticipantsList } from '@/components/chat/ParticipantsList'
-import { TypingIndicator } from '@/components/chat/TypingIndicator'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { useAudio } from '@/hooks/useAudio'
+} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import type { Conversation, Message, User } from "@/api/types";
+import { MessageList } from "@/components/chat/MessageList";
+import { ParticipantsList } from "@/components/chat/ParticipantsList";
+import { TypingIndicator } from "@/components/chat/TypingIndicator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAudio } from "@/hooks/useAudio";
 import {
   useAddChatroomModerator,
   useAllChatrooms,
@@ -46,312 +46,264 @@ import {
   useRoomMuteUser,
   useRoomUnbanUser,
   useSendMessage,
-} from '@/hooks/useChat'
-import { useFriends } from '@/hooks/useFriends'
-import { useIsMobile } from '@/hooks/useMediaQuery'
-import { usePresenceStore } from '@/hooks/usePresence'
-import { getCurrentUser, useIsAuthenticated } from '@/hooks/useUsers'
-import {
-  shouldPlayFriendDMInMessagesView,
-  shouldPlayFriendOnlineSound,
-} from '@/lib/chat-sounds'
+} from "@/hooks/useChat";
+import { useFriends } from "@/hooks/useFriends";
+import { useIsMobile } from "@/hooks/useMediaQuery";
+import { usePresenceStore } from "@/hooks/usePresence";
+import { getCurrentUser, useIsAuthenticated } from "@/hooks/useUsers";
+import { shouldPlayFriendDMInMessagesView, shouldPlayFriendOnlineSound } from "@/lib/chat-sounds";
 import {
   deduplicateDMConversations,
   getDirectMessageAvatar,
   getDirectMessageName,
   getInitials,
-} from '@/lib/chat-utils'
-import { cn } from '@/lib/utils'
-import { useChatContext } from '@/providers/ChatProvider'
-import { useChatDockStore } from '@/stores/useChatDockStore'
+} from "@/lib/chat-utils";
+import { cn } from "@/lib/utils";
+import { useChatContext } from "@/providers/ChatProvider";
+import { useChatDockStore } from "@/stores/useChatDockStore";
 
-const QUICK_EMOJI = ['😀', '😂', '😍', '👍', '🔥', '🎉', '😮', '🤝']
+const QUICK_EMOJI = ["😀", "😂", "😍", "👍", "🔥", "🎉", "😮", "🤝"];
 
 export default function Chat() {
-  const { id: urlChatId } = useParams<{ id: string }>()
-  const location = useLocation()
-  const navigate = useNavigate()
-  const isMobile = useIsMobile()
-  const isAuthenticated = useIsAuthenticated()
-  const [showMobileList, setShowMobileList] = useState(!urlChatId)
-  const [newMessage, setNewMessage] = useState('')
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  const [mentionQuery, setMentionQuery] = useState('')
-  const [showChatrooms, setShowChatrooms] = useState(true)
-  const [leftSidebarMode, setLeftSidebarMode] = useState<'rooms' | 'dms'>(
-    'rooms'
-  )
-  const [showParticipants, setShowParticipants] = useState(true)
-  const [showTimestamps, setShowTimestamps] = useState(true)
-  const [roomsPage, setRoomsPage] = useState(0)
-  const [roomsPerPage, setRoomsPerPage] = useState(10)
-  const roomsWrapperRef = useRef<HTMLDivElement>(null)
-  const [messageError, setMessageError] = useState<string | null>(null)
+  const { id: urlChatId } = useParams<{ id: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const isAuthenticated = useIsAuthenticated();
+  const [showMobileList, setShowMobileList] = useState(!urlChatId);
+  const [newMessage, setNewMessage] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [showChatrooms, setShowChatrooms] = useState(true);
+  const [leftSidebarMode, setLeftSidebarMode] = useState<"rooms" | "dms">("rooms");
+  const [showParticipants, setShowParticipants] = useState(true);
+  const [showTimestamps, setShowTimestamps] = useState(true);
+  const [roomsPage, setRoomsPage] = useState(0);
+  const [roomsPerPage, setRoomsPerPage] = useState(10);
+  const roomsWrapperRef = useRef<HTMLDivElement>(null);
+  const [messageError, setMessageError] = useState<string | null>(null);
   const [openRoomTabs, setOpenRoomTabs] = useState<number[]>(() => {
     try {
-      const userStr = localStorage.getItem('user')
+      const userStr = localStorage.getItem("user");
       if (userStr) {
-        const user = JSON.parse(userStr)
-        const saved = localStorage.getItem(`chat_open_tabs:${user.id}`)
-        return saved ? JSON.parse(saved) : []
+        const user = JSON.parse(userStr);
+        const saved = localStorage.getItem(`chat_open_tabs:${user.id}`);
+        return saved ? JSON.parse(saved) : [];
       }
     } catch (e) {
-      console.error('Failed to load open room tabs', e)
+      console.error("Failed to load open room tabs", e);
     }
-    return []
-  })
+    return [];
+  });
 
   // Persist open tabs to localStorage
   useEffect(() => {
     try {
-      const userStr = localStorage.getItem('user')
+      const userStr = localStorage.getItem("user");
       if (userStr) {
-        const user = JSON.parse(userStr)
-        localStorage.setItem(
-          `chat_open_tabs:${user.id}`,
-          JSON.stringify(openRoomTabs)
-        )
+        const user = JSON.parse(userStr);
+        localStorage.setItem(`chat_open_tabs:${user.id}`, JSON.stringify(openRoomTabs));
       }
     } catch {}
-  }, [openRoomTabs])
+  }, [openRoomTabs]);
 
-  const [unreadByRoom, setUnreadByRoom] = useState<Record<number, number>>({})
+  const [unreadByRoom, setUnreadByRoom] = useState<Record<number, number>>({});
 
-  const lastProcessedIdRef = useRef<number | null>(null)
+  const lastProcessedIdRef = useRef<number | null>(null);
 
-  const [roomOnlineIds, setRoomOnlineIds] = useState<
-    Record<number, Set<number>>
-  >({})
-  const roomAlertedRef = useRef<Set<number>>(new Set())
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const isNearBottomRef = useRef(true)
-  const lastMarkedReadChatIdRef = useRef<number | null>(null)
-  const typingDebounceRef = useRef<number | null>(null)
-  const typingInactivityRef = useRef<number | null>(null)
-  const remoteTypingTimeoutsRef = useRef<Record<number, number>>({})
-  const queryClient = useQueryClient()
+  const [roomOnlineIds, setRoomOnlineIds] = useState<Record<number, Set<number>>>({});
+  const roomAlertedRef = useRef<Set<number>>(new Set());
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+  const lastMarkedReadChatIdRef = useRef<number | null>(null);
+  const typingDebounceRef = useRef<number | null>(null);
+  const typingInactivityRef = useRef<number | null>(null);
+  const remoteTypingTimeoutsRef = useRef<Record<number, number>>({});
+  const queryClient = useQueryClient();
 
-  const onlineUserIds = usePresenceStore(state => state.onlineUserIds)
-  const notifiedUserIds = usePresenceStore(state => state.notifiedUserIds)
-  const markNotified = usePresenceStore(state => state.markNotified)
-  const setOnline = usePresenceStore(state => state.setOnline)
-  const setOffline = usePresenceStore(state => state.setOffline)
-  const setInitialOnlineUsers = usePresenceStore(
-    state => state.setInitialOnlineUsers
-  )
+  const onlineUserIds = usePresenceStore((state) => state.onlineUserIds);
+  const notifiedUserIds = usePresenceStore((state) => state.notifiedUserIds);
+  const markNotified = usePresenceStore((state) => state.markNotified);
+  const setOnline = usePresenceStore((state) => state.setOnline);
+  const setOffline = usePresenceStore((state) => state.setOffline);
+  const setInitialOnlineUsers = usePresenceStore((state) => state.setInitialOnlineUsers);
 
   const { data: friends = [], isSuccess: friendsLoaded } = useFriends({
     enabled: isAuthenticated,
-  })
+  });
   const isMessagesRoute =
-    location.pathname.includes('/messages') ||
-    location.pathname === '/chat' ||
-    location.pathname.startsWith('/chat/')
+    location.pathname.includes("/messages") ||
+    location.pathname === "/chat" ||
+    location.pathname.startsWith("/chat/");
 
-  const currentUser = getCurrentUser()
+  const currentUser = getCurrentUser();
   const friendIds = useMemo(
-    () => new Set((friendsLoaded ? friends : []).map(friend => friend.id)),
-    [friends, friendsLoaded]
-  )
+    () => new Set((friendsLoaded ? friends : []).map((friend) => friend.id)),
+    [friends, friendsLoaded],
+  );
 
-  const {
-    data: allChatrooms = [],
-    isLoading: allLoading,
-    error: allError,
-  } = useAllChatrooms()
-  const { data: allConversations = [], isLoading: conversationsLoading } =
-    useConversations()
-  const joinedChatroomsQuery = useJoinedChatrooms()
-  const joinedChatrooms = joinedChatroomsQuery.data || []
-  const joinChatroom = useJoinChatroom()
-  const leaveConversation = useLeaveConversation()
+  const { data: allChatrooms = [], isLoading: allLoading, error: allError } = useAllChatrooms();
+  const { data: allConversations = [], isLoading: conversationsLoading } = useConversations();
+  const joinedChatroomsQuery = useJoinedChatrooms();
+  const joinedChatrooms = joinedChatroomsQuery.data || [];
+  const joinChatroom = useJoinChatroom();
+  const leaveConversation = useLeaveConversation();
 
-  const conversations = allChatrooms as Conversation[]
-  const activeRooms = useMemo(
-    () => joinedChatrooms as Conversation[],
-    [joinedChatrooms]
-  )
+  const conversations = allChatrooms as Conversation[];
+  const activeRooms = useMemo(() => joinedChatrooms as Conversation[], [joinedChatrooms]);
   const dmConversations = useMemo(
-    () =>
-      deduplicateDMConversations(
-        allConversations as Conversation[],
-        currentUser?.id
-      ),
-    [allConversations, currentUser?.id]
-  )
+    () => deduplicateDMConversations(allConversations as Conversation[], currentUser?.id),
+    [allConversations, currentUser?.id],
+  );
   const dmConversationById = useMemo(
-    () =>
-      new Map(
-        dmConversations.map(conversation => [conversation.id, conversation])
-      ),
-    [dmConversations]
-  )
+    () => new Map(dmConversations.map((conversation) => [conversation.id, conversation])),
+    [dmConversations],
+  );
 
-  const lastScrolledChatIdRef = useRef<number | null>(null)
+  const lastScrolledChatIdRef = useRef<number | null>(null);
 
   const scrollToBottom = useCallback((smooth = true) => {
-    const viewport = scrollAreaRef.current
+    const viewport = scrollAreaRef.current;
     if (viewport) {
       viewport.scrollTo({
         top: viewport.scrollHeight,
-        behavior: smooth ? 'smooth' : 'auto',
-      })
+        behavior: smooth ? "smooth" : "auto",
+      });
     }
-  }, [])
+  }, []);
 
   const handleScroll = useCallback(() => {
-    const viewport = scrollAreaRef.current
+    const viewport = scrollAreaRef.current;
     if (viewport) {
-      const isAtBottom =
-        viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 150
-      isNearBottomRef.current = isAtBottom
+      const isAtBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 150;
+      isNearBottomRef.current = isAtBottom;
     }
-  }, [])
+  }, []);
 
   // Initialize room unread counts from server data
   useEffect(() => {
     if (joinedChatrooms.length > 0) {
-      setUnreadByRoom(prev => {
-        const next = { ...prev }
-        let changed = false
+      setUnreadByRoom((prev) => {
+        const next = { ...prev };
+        let changed = false;
         for (const room of joinedChatrooms) {
           if (room.unread_count && room.unread_count > 0 && !next[room.id]) {
-            next[room.id] = room.unread_count
-            changed = true
+            next[room.id] = room.unread_count;
+            changed = true;
           }
         }
-        return changed ? next : prev
-      })
+        return changed ? next : prev;
+      });
     }
-  }, [joinedChatrooms])
+  }, [joinedChatrooms]);
 
   // Dynamic Page Size Calculation
   useEffect(() => {
-    if (leftSidebarMode !== 'rooms' || !roomsWrapperRef.current) return
+    if (leftSidebarMode !== "rooms" || !roomsWrapperRef.current) return;
 
     const calculatePerPage = () => {
       if (roomsWrapperRef.current) {
-        const height = roomsWrapperRef.current.clientHeight
+        const height = roomsWrapperRef.current.clientHeight;
         // Each condensed room item is ~32px + 2px gap = 34px
-        const itemHeight = 34
-        const count = Math.max(1, Math.floor(height / itemHeight))
-        setRoomsPerPage(count)
+        const itemHeight = 34;
+        const count = Math.max(1, Math.floor(height / itemHeight));
+        setRoomsPerPage(count);
       }
-    }
+    };
 
-    const observer = new ResizeObserver(calculatePerPage)
-    observer.observe(roomsWrapperRef.current)
-    calculatePerPage()
+    const observer = new ResizeObserver(calculatePerPage);
+    observer.observe(roomsWrapperRef.current);
+    calculatePerPage();
 
-    return () => observer.disconnect()
-  }, [leftSidebarMode])
+    return () => observer.disconnect();
+  }, [leftSidebarMode]);
 
   const selectedChatId = useMemo(
     () => (urlChatId ? Number.parseInt(urlChatId, 10) : null),
-    [urlChatId]
-  )
+    [urlChatId],
+  );
 
   const selectedListedConversation = useMemo(() => {
-    if (!selectedChatId) return null
+    if (!selectedChatId) return null;
     return (
-      conversations.find(c => c.id === selectedChatId) ||
-      dmConversations.find(c => c.id === selectedChatId) ||
-      activeRooms.find(c => c.id === selectedChatId) ||
+      conversations.find((c) => c.id === selectedChatId) ||
+      dmConversations.find((c) => c.id === selectedChatId) ||
+      activeRooms.find((c) => c.id === selectedChatId) ||
       null
-    )
-  }, [conversations, dmConversations, activeRooms, selectedChatId])
+    );
+  }, [conversations, dmConversations, activeRooms, selectedChatId]);
 
   // Sync sidebar mode with selected conversation type on navigation
   useEffect(() => {
-    if (
-      selectedListedConversation &&
-      selectedChatId === selectedListedConversation.id
-    ) {
+    if (selectedListedConversation && selectedChatId === selectedListedConversation.id) {
       if (selectedChatId !== lastProcessedIdRef.current) {
-        setLeftSidebarMode(
-          selectedListedConversation.is_group ? 'rooms' : 'dms'
-        )
-        lastProcessedIdRef.current = selectedChatId
+        setLeftSidebarMode(selectedListedConversation.is_group ? "rooms" : "dms");
+        lastProcessedIdRef.current = selectedChatId;
       }
     } else if (!selectedChatId) {
-      lastProcessedIdRef.current = null
+      lastProcessedIdRef.current = null;
     }
-  }, [selectedChatId, selectedListedConversation])
+  }, [selectedChatId, selectedListedConversation]);
 
   const canAccessSelectedConversation = useMemo(() => {
-    if (!selectedListedConversation) return false
-    if (!selectedListedConversation.is_group) return true
-    if (
-      (selectedListedConversation as { is_joined?: boolean }).is_joined === true
-    )
-      return true
-    if (activeRooms.some(joined => joined.id === selectedListedConversation.id))
-      return true
+    if (!selectedListedConversation) return false;
+    if (!selectedListedConversation.is_group) return true;
+    if ((selectedListedConversation as { is_joined?: boolean }).is_joined === true) return true;
+    if (activeRooms.some((joined) => joined.id === selectedListedConversation.id)) return true;
     if (
       currentUser &&
-      selectedListedConversation.participants?.some(
-        p => p.id === currentUser.id
-      )
+      selectedListedConversation.participants?.some((p) => p.id === currentUser.id)
     )
-      return true
-    return false
-  }, [selectedListedConversation, activeRooms, currentUser])
+      return true;
+    return false;
+  }, [selectedListedConversation, activeRooms, currentUser]);
 
   const { data: selectedConversation } = useConversation(selectedChatId || 0, {
     enabled: canAccessSelectedConversation,
-  })
+  });
 
   // Sync dock unread: reset only when conversation is loaded and user has access (not URL-only)
   useEffect(() => {
     if (canAccessSelectedConversation && selectedConversation) {
-      useChatDockStore.getState().resetUnread(selectedConversation.id)
+      useChatDockStore.getState().resetUnread(selectedConversation.id);
     }
-  }, [canAccessSelectedConversation, selectedConversation])
+  }, [canAccessSelectedConversation, selectedConversation]);
 
   // Tell the dock which conversation the Chat page is viewing so it suppresses toasts
   useEffect(() => {
-    useChatDockStore
-      .getState()
-      .setActivePageConversation(selectedChatId ?? null)
+    useChatDockStore.getState().setActivePageConversation(selectedChatId ?? null);
     return () => {
-      useChatDockStore.getState().setActivePageConversation(null)
-    }
-  }, [selectedChatId])
+      useChatDockStore.getState().setActivePageConversation(null);
+    };
+  }, [selectedChatId]);
 
   useEffect(() => {
-    if (isMobile || selectedChatId) return
-    if (leftSidebarMode === 'dms' && dmConversations.length > 0) {
-      navigate(`/chat/${dmConversations[0].id}`, { replace: true })
-      return
+    if (isMobile || selectedChatId) return;
+    if (leftSidebarMode === "dms" && dmConversations.length > 0) {
+      navigate(`/chat/${dmConversations[0].id}`, { replace: true });
+      return;
     }
     if (activeRooms.length > 0) {
-      navigate(`/chat/${activeRooms[0].id}`, { replace: true })
+      navigate(`/chat/${activeRooms[0].id}`, { replace: true });
     }
-  }, [
-    activeRooms,
-    dmConversations,
-    leftSidebarMode,
-    selectedChatId,
-    navigate,
-    isMobile,
-  ])
+  }, [activeRooms, dmConversations, leftSidebarMode, selectedChatId, navigate, isMobile]);
 
   useEffect(() => {
-    if (!selectedChatId) return
-    if (allLoading || conversationsLoading) return
-    if (selectedListedConversation) return
+    if (!selectedChatId) return;
+    if (allLoading || conversationsLoading) return;
+    if (selectedListedConversation) return;
 
     const fallbackId =
-      (leftSidebarMode === 'dms' ? dmConversations[0]?.id : undefined) ||
+      (leftSidebarMode === "dms" ? dmConversations[0]?.id : undefined) ||
       activeRooms[0]?.id ||
-      dmConversations[0]?.id
+      dmConversations[0]?.id;
 
     if (fallbackId) {
-      navigate(`/chat/${fallbackId}`, { replace: true })
-      return
+      navigate(`/chat/${fallbackId}`, { replace: true });
+      return;
     }
 
-    navigate('/chat', { replace: true })
+    navigate("/chat", { replace: true });
   }, [
     selectedChatId,
     allLoading,
@@ -361,15 +313,11 @@ export default function Chat() {
     dmConversations,
     activeRooms,
     navigate,
-  ])
+  ]);
 
-  const { data: messages = [], isLoading } = useMessages(
-    selectedChatId || 0,
-    undefined,
-    {
-      enabled: canAccessSelectedConversation,
-    }
-  )
+  const { data: messages = [], isLoading } = useMessages(selectedChatId || 0, undefined, {
+    enabled: canAccessSelectedConversation,
+  });
 
   // Handle conversation change and initial load
   useEffect(() => {
@@ -377,179 +325,162 @@ export default function Chat() {
       if (lastScrolledChatIdRef.current !== selectedChatId) {
         // First load of this conversation
         const timer = setTimeout(() => {
-          scrollToBottom(false)
-          isNearBottomRef.current = true
-          lastScrolledChatIdRef.current = selectedChatId
-        }, 100)
-        return () => clearTimeout(timer)
+          scrollToBottom(false);
+          isNearBottomRef.current = true;
+          lastScrolledChatIdRef.current = selectedChatId;
+        }, 100);
+        return () => clearTimeout(timer);
       }
     }
-  }, [selectedChatId, isLoading, messages.length, scrollToBottom])
+  }, [selectedChatId, isLoading, messages.length, scrollToBottom]);
 
   // Handle new messages
   useEffect(() => {
     if (messages.length > 0 && isNearBottomRef.current) {
-      scrollToBottom(true)
+      scrollToBottom(true);
     }
-  }, [messages.length, scrollToBottom])
+  }, [messages.length, scrollToBottom]);
 
-  const sendMessage = useSendMessage(selectedChatId || 0)
-  const markAsRead = useMarkAsRead()
+  const sendMessage = useSendMessage(selectedChatId || 0);
+  const markAsRead = useMarkAsRead();
 
   const fallbackConversation = useMemo(() => {
-    if (!selectedChatId) return null
+    if (!selectedChatId) return null;
     return (
-      conversations.find(c => c.id === selectedChatId) ||
-      dmConversations.find(c => c.id === selectedChatId) ||
-      activeRooms.find(c => c.id === selectedChatId) ||
+      conversations.find((c) => c.id === selectedChatId) ||
+      dmConversations.find((c) => c.id === selectedChatId) ||
+      activeRooms.find((c) => c.id === selectedChatId) ||
       null
-    )
-  }, [conversations, dmConversations, activeRooms, selectedChatId])
+    );
+  }, [conversations, dmConversations, activeRooms, selectedChatId]);
 
   const currentConversation = useMemo(
     () => selectedConversation || fallbackConversation,
-    [selectedConversation, fallbackConversation]
-  )
-  const isCurrentConversationGroup = currentConversation?.is_group === true
-  const selectedRoomID = isCurrentConversationGroup
-    ? (currentConversation?.id ?? 0)
-    : 0
-  const canModerateCurrentRoom =
-    currentConversation?.capabilities?.can_moderate === true
+    [selectedConversation, fallbackConversation],
+  );
+  const isCurrentConversationGroup = currentConversation?.is_group === true;
+  const selectedRoomID = isCurrentConversationGroup ? (currentConversation?.id ?? 0) : 0;
+  const canModerateCurrentRoom = currentConversation?.capabilities?.can_moderate === true;
   const canManageCurrentRoomModerators =
-    currentConversation?.capabilities?.can_manage_moderators === true
-  const moderatorMgmtRoomID = canManageCurrentRoomModerators
-    ? selectedRoomID
-    : 0
-  const moderationRoomID = canModerateCurrentRoom ? selectedRoomID : 0
-  const roomModeratorsQuery = useChatroomModerators(moderatorMgmtRoomID)
-  const roomMutesQuery = useRoomMutes(moderationRoomID)
-  const roomBansQuery = useRoomBans(moderationRoomID)
-  const kickParticipant = useKickChatroomParticipant(selectedRoomID)
-  const muteParticipant = useRoomMuteUser(selectedRoomID)
-  const banParticipant = useRoomBanUser(selectedRoomID)
-  const unbanParticipant = useRoomUnbanUser(selectedRoomID)
-  const addRoomModerator = useAddChatroomModerator(selectedRoomID)
-  const removeRoomModerator = useRemoveChatroomModerator(selectedRoomID)
+    currentConversation?.capabilities?.can_manage_moderators === true;
+  const moderatorMgmtRoomID = canManageCurrentRoomModerators ? selectedRoomID : 0;
+  const moderationRoomID = canModerateCurrentRoom ? selectedRoomID : 0;
+  const roomModeratorsQuery = useChatroomModerators(moderatorMgmtRoomID);
+  const roomMutesQuery = useRoomMutes(moderationRoomID);
+  const roomBansQuery = useRoomBans(moderationRoomID);
+  const kickParticipant = useKickChatroomParticipant(selectedRoomID);
+  const muteParticipant = useRoomMuteUser(selectedRoomID);
+  const banParticipant = useRoomBanUser(selectedRoomID);
+  const unbanParticipant = useRoomUnbanUser(selectedRoomID);
+  const addRoomModerator = useAddChatroomModerator(selectedRoomID);
+  const removeRoomModerator = useRemoveChatroomModerator(selectedRoomID);
 
   const isJoinedViaList = useMemo(
-    () => joinedChatrooms.some(c => c.id === selectedChatId),
-    [joinedChatrooms, selectedChatId]
-  )
+    () => joinedChatrooms.some((c) => c.id === selectedChatId),
+    [joinedChatrooms, selectedChatId],
+  );
 
   const userIsJoined = useMemo(() => {
-    if (!currentConversation) return false
-    if (!currentConversation.is_group) return true
-    if (isJoinedViaList) return true
-    if (
-      currentUser &&
-      currentConversation.participants?.some(p => p.id === currentUser.id)
-    )
-      return true
-    const fromChatrooms = (
-      currentConversation as Conversation & { is_joined?: boolean }
-    ).is_joined
-    if (typeof fromChatrooms === 'boolean') return fromChatrooms
-    return false
-  }, [currentConversation, currentUser, isJoinedViaList])
+    if (!currentConversation) return false;
+    if (!currentConversation.is_group) return true;
+    if (isJoinedViaList) return true;
+    if (currentUser && currentConversation.participants?.some((p) => p.id === currentUser.id))
+      return true;
+    const fromChatrooms = (currentConversation as Conversation & { is_joined?: boolean }).is_joined;
+    if (typeof fromChatrooms === "boolean") return fromChatrooms;
+    return false;
+  }, [currentConversation, currentUser, isJoinedViaList]);
 
   const isRoomJoined = useCallback(
     (room: Conversation & { is_joined?: boolean }) => {
-      if (room.is_joined === true) return true
-      if (activeRooms.some(joined => joined.id === room.id)) return true
-      if (currentUser && room.participants?.some(p => p.id === currentUser.id))
-        return true
-      return false
+      if (room.is_joined === true) return true;
+      if (activeRooms.some((joined) => joined.id === room.id)) return true;
+      if (currentUser && room.participants?.some((p) => p.id === currentUser.id)) return true;
+      return false;
     },
-    [activeRooms, currentUser]
-  )
+    [activeRooms, currentUser],
+  );
 
   const [participants, setParticipants] = useState<
     Record<
       number,
       {
-        id: number
-        username?: string
-        avatar?: string
-        bio?: string
-        online?: boolean
-        typing?: boolean
+        id: number;
+        username?: string;
+        avatar?: string;
+        bio?: string;
+        online?: boolean;
+        typing?: boolean;
       }
     >
-  >({})
+  >({});
   const setRoomParticipantsInCache = useCallback(
     (conversationId: number, nextParticipants: User[]) => {
       const isJoined = currentUser
-        ? nextParticipants.some(p => p.id === currentUser.id)
-        : undefined
+        ? nextParticipants.some((p) => p.id === currentUser.id)
+        : undefined;
       const updateRoom = (room: Conversation & { is_joined?: boolean }) =>
         room.id === conversationId
           ? {
               ...room,
               participants: nextParticipants,
-              ...(typeof isJoined === 'boolean' && { is_joined: isJoined }),
+              ...(typeof isJoined === "boolean" && { is_joined: isJoined }),
             }
-          : room
+          : room;
       queryClient.setQueryData<Conversation[] | undefined>(
-        ['chat', 'chatrooms', 'all'],
-        oldRooms => oldRooms?.map(updateRoom)
-      )
+        ["chat", "chatrooms", "all"],
+        (oldRooms) => oldRooms?.map(updateRoom),
+      );
       queryClient.setQueryData<Conversation[] | undefined>(
-        ['chat', 'chatrooms', 'joined'],
-        oldRooms => oldRooms?.map(updateRoom)
-      )
+        ["chat", "chatrooms", "joined"],
+        (oldRooms) => oldRooms?.map(updateRoom),
+      );
       queryClient.setQueryData<Conversation | undefined>(
-        ['chat', 'conversation', conversationId],
-        oldConversation =>
+        ["chat", "conversation", conversationId],
+        (oldConversation) =>
           oldConversation
             ? {
                 ...oldConversation,
                 participants: nextParticipants,
-                ...(typeof isJoined === 'boolean' && {
+                ...(typeof isJoined === "boolean" && {
                   is_joined: isJoined,
                 }),
               }
-            : oldConversation
-      )
+            : oldConversation,
+      );
     },
-    [queryClient, currentUser]
-  )
+    [queryClient, currentUser],
+  );
 
   useEffect(() => {
-    if (!selectedChatId || !canAccessSelectedConversation) return
-    if (isCurrentConversationGroup) return
-    if (lastMarkedReadChatIdRef.current === selectedChatId) return
-    lastMarkedReadChatIdRef.current = selectedChatId
-    markAsRead.mutate(selectedChatId)
-  }, [
-    selectedChatId,
-    canAccessSelectedConversation,
-    isCurrentConversationGroup,
-    markAsRead,
-  ])
+    if (!selectedChatId || !canAccessSelectedConversation) return;
+    if (isCurrentConversationGroup) return;
+    if (lastMarkedReadChatIdRef.current === selectedChatId) return;
+    lastMarkedReadChatIdRef.current = selectedChatId;
+    markAsRead.mutate(selectedChatId);
+  }, [selectedChatId, canAccessSelectedConversation, isCurrentConversationGroup, markAsRead]);
 
   useEffect(() => {
     if (!selectedChatId || !currentConversation) {
-      setParticipants({})
-      return
+      setParticipants({});
+      return;
     }
 
-    const usersList: User[] = currentConversation.participants || []
+    const usersList: User[] = currentConversation.participants || [];
     const map: Record<
       number,
       {
-        id: number
-        username?: string
-        avatar?: string
-        bio?: string
-        online?: boolean
-        typing?: boolean
+        id: number;
+        username?: string;
+        avatar?: string;
+        bio?: string;
+        online?: boolean;
+        typing?: boolean;
       }
-    > = {}
+    > = {};
 
     const shouldIncludeCurrentUser =
-      !!currentUser &&
-      (userIsJoined || usersList.some(u => u.id === currentUser.id))
+      !!currentUser && (userIsJoined || usersList.some((u) => u.id === currentUser.id));
 
     if (currentUser && shouldIncludeCurrentUser) {
       map[currentUser.id] = {
@@ -559,7 +490,7 @@ export default function Chat() {
         bio: currentUser.bio,
         online: true,
         typing: false,
-      }
+      };
     }
 
     for (const u of usersList) {
@@ -571,28 +502,21 @@ export default function Chat() {
           bio: u.bio,
           online: onlineUserIds.has(u.id),
           typing: false,
-        }
+        };
       }
     }
 
-    setParticipants(map)
-  }, [
-    selectedChatId,
-    currentConversation,
-    currentUser,
-    userIsJoined,
-    onlineUserIds,
-  ])
+    setParticipants(map);
+  }, [selectedChatId, currentConversation, currentUser, userIsJoined, onlineUserIds]);
 
-  const { playFriendOnlineSound, playNewMessageSound, playRoomAlertSound } =
-    useAudio()
+  const { playFriendOnlineSound, playNewMessageSound, playRoomAlertSound } = useAudio();
 
   const onPresence = useCallback(
     (userId: number, username: string, status: string) => {
-      const online = status === 'online' || status === 'connected'
+      const online = status === "online" || status === "connected";
       console.log(
-        `Presence update: user=${userId} (${username}) status=${status} (online=${online})`
-      )
+        `Presence update: user=${userId} (${username}) status=${status} (online=${online})`,
+      );
 
       if (
         shouldPlayFriendOnlineSound(
@@ -600,20 +524,20 @@ export default function Chat() {
           status,
           currentUser?.id,
           notifiedUserIds,
-          friends.map(f => f.id)
+          friends.map((f) => f.id),
         )
       ) {
-        console.log(`Playing friend online sound for ${username}`)
-        markNotified(userId)
-        playFriendOnlineSound()
+        console.log(`Playing friend online sound for ${username}`);
+        markNotified(userId);
+        playFriendOnlineSound();
       }
 
-      setParticipants(prev => ({
+      setParticipants((prev) => ({
         ...prev,
         [userId]: { ...(prev?.[userId] || { id: userId, username }), online },
-      }))
-      if (online) setOnline(userId)
-      else setOffline(userId)
+      }));
+      if (online) setOnline(userId);
+      else setOffline(userId);
     },
     [
       setOnline,
@@ -623,32 +547,32 @@ export default function Chat() {
       friends,
       notifiedUserIds,
       markNotified,
-    ]
-  )
+    ],
+  );
 
   const onConnectedUsers = useCallback(
     (userIds: number[]) => {
       for (const uid of userIds) {
-        markNotified(uid)
+        markNotified(uid);
       }
-      setInitialOnlineUsers(userIds)
+      setInitialOnlineUsers(userIds);
     },
-    [setInitialOnlineUsers, markNotified]
-  )
+    [setInitialOnlineUsers, markNotified],
+  );
 
   const onParticipantsUpdate = useCallback(
     (participantsList: User[]) => {
       const map: Record<
         number,
         {
-          id: number
-          username?: string
-          avatar?: string
-          bio?: string
-          online?: boolean
-          typing?: boolean
+          id: number;
+          username?: string;
+          avatar?: string;
+          bio?: string;
+          online?: boolean;
+          typing?: boolean;
         }
-      > = {}
+      > = {};
       if (currentUser && userIsJoined) {
         map[currentUser.id] = {
           id: currentUser.id,
@@ -657,7 +581,7 @@ export default function Chat() {
           bio: currentUser.bio,
           online: true,
           typing: false,
-        }
+        };
       }
       for (const u of participantsList) {
         if (!currentUser || u.id !== currentUser.id) {
@@ -668,156 +592,135 @@ export default function Chat() {
             bio: u.bio,
             online: onlineUserIds.has(u.id),
             typing: false,
-          }
+          };
         }
       }
-      setParticipants(map)
+      setParticipants(map);
     },
-    [currentUser, userIsJoined, onlineUserIds]
-  )
+    [currentUser, userIsJoined, onlineUserIds],
+  );
 
   const onRoomMessage = useCallback(
     (roomMessage: Message, conversationId: number) => {
-      queryClient.setQueryData<Message[]>(
-        ['chat', 'messages', conversationId],
-        oldMessages => {
-          if (!oldMessages) return [roomMessage]
-          if (oldMessages.some(m => m.id === roomMessage.id)) return oldMessages
+      queryClient.setQueryData<Message[]>(["chat", "messages", conversationId], (oldMessages) => {
+        if (!oldMessages) return [roomMessage];
+        if (oldMessages.some((m) => m.id === roomMessage.id)) return oldMessages;
 
-          // If this is our own message coming back via WebSocket, replace the optimistic one
-          const tempId = (roomMessage.metadata as Record<string, unknown>)
-            ?.tempId
-          if (tempId) {
-            const hasOptimistic = oldMessages.some(
-              m => (m.metadata as Record<string, unknown>)?.tempId === tempId
-            )
-            if (hasOptimistic) {
-              return oldMessages.map(m =>
-                (m.metadata as Record<string, unknown>)?.tempId === tempId
-                  ? roomMessage
-                  : m
-              )
-            }
+        // If this is our own message coming back via WebSocket, replace the optimistic one
+        const tempId = (roomMessage.metadata as Record<string, unknown>)?.tempId;
+        if (tempId) {
+          const hasOptimistic = oldMessages.some(
+            (m) => (m.metadata as Record<string, unknown>)?.tempId === tempId,
+          );
+          if (hasOptimistic) {
+            return oldMessages.map((m) =>
+              (m.metadata as Record<string, unknown>)?.tempId === tempId ? roomMessage : m,
+            );
           }
-
-          return [...oldMessages, roomMessage]
         }
-      )
+
+        return [...oldMessages, roomMessage];
+      });
 
       queryClient.setQueryData<Conversation[] | undefined>(
-        ['chat', 'chatrooms', 'all'],
-        oldRooms =>
-          oldRooms?.map(room =>
+        ["chat", "chatrooms", "all"],
+        (oldRooms) =>
+          oldRooms?.map((room) =>
             room.id === conversationId
               ? {
                   ...room,
                   last_message: roomMessage,
                 }
-              : room
-          )
-      )
+              : room,
+          ),
+      );
       queryClient.setQueryData<Conversation[] | undefined>(
-        ['chat', 'chatrooms', 'joined'],
-        oldRooms =>
-          oldRooms?.map(room =>
+        ["chat", "chatrooms", "joined"],
+        (oldRooms) =>
+          oldRooms?.map((room) =>
             room.id === conversationId
               ? {
                   ...room,
                   last_message: roomMessage,
                 }
-              : room
-          )
-      )
+              : room,
+          ),
+      );
 
       if (conversationId === selectedChatId) {
-        setUnreadByRoom(prev =>
+        setUnreadByRoom((prev) =>
           prev[conversationId]
             ? {
                 ...prev,
                 [conversationId]: 0,
               }
-            : prev
-        )
-        return
+            : prev,
+        );
+        return;
       }
 
       if (roomMessage.sender_id === currentUser?.id) {
-        return
+        return;
       }
 
-      const isJoinedRoom = activeRooms.some(room => room.id === conversationId)
+      const isJoinedRoom = activeRooms.some((room) => room.id === conversationId);
       if (!isJoinedRoom) {
-        return
+        return;
       }
 
       if (!roomAlertedRef.current.has(conversationId)) {
-        roomAlertedRef.current.add(conversationId)
-        playRoomAlertSound()
+        roomAlertedRef.current.add(conversationId);
+        playRoomAlertSound();
       }
 
-      setUnreadByRoom(prev => ({
+      setUnreadByRoom((prev) => ({
         ...prev,
         [conversationId]: (prev[conversationId] || 0) + 1,
-      }))
+      }));
     },
-    [
-      queryClient,
-      selectedChatId,
-      currentUser?.id,
-      playRoomAlertSound,
-      activeRooms,
-    ]
-  )
+    [queryClient, selectedChatId, currentUser?.id, playRoomAlertSound, activeRooms],
+  );
 
   const onChatroomPresence = useCallback(
     (payload: {
-      conversation_id: number
-      participants: User[]
-      member_count?: number
-      user_id?: number
-      username?: string
-      action?: string
-      online_user_ids?: number[]
+      conversation_id: number;
+      participants: User[];
+      member_count?: number;
+      user_id?: number;
+      username?: string;
+      action?: string;
+      online_user_ids?: number[];
     }) => {
-      if (!payload?.conversation_id) return
+      if (!payload?.conversation_id) return;
 
-      setRoomParticipantsInCache(
-        payload.conversation_id,
-        payload.participants || []
-      )
+      setRoomParticipantsInCache(payload.conversation_id, payload.participants || []);
 
       // Sync per-room online tracking from authoritative backend data
       if (Array.isArray(payload.online_user_ids)) {
-        const onlineSet = new Set(payload.online_user_ids)
-        setRoomOnlineIds(prev => ({
+        const onlineSet = new Set(payload.online_user_ids);
+        setRoomOnlineIds((prev) => ({
           ...prev,
           [payload.conversation_id]: onlineSet,
-        }))
+        }));
 
         // Also sync the global presence store so other UI stays consistent
         for (const uid of payload.online_user_ids) {
-          setOnline(uid)
+          setOnline(uid);
         }
         // Mark participants NOT in online_user_ids as offline
         for (const p of payload.participants || []) {
           if (!onlineSet.has(p.id)) {
-            setOffline(p.id)
+            setOffline(p.id);
           }
         }
       }
 
       if (payload.conversation_id === selectedChatId) {
-        onParticipantsUpdate(payload.participants || [])
+        onParticipantsUpdate(payload.participants || []);
       }
     },
-    [
-      onParticipantsUpdate,
-      selectedChatId,
-      setRoomParticipantsInCache,
-      setOnline,
-      setOffline,
-    ]
-  )
+    [onParticipantsUpdate, selectedChatId, setRoomParticipantsInCache, setOnline, setOffline],
+  );
 
   // Use shared ChatProvider WebSocket (no duplicate connection)
   const {
@@ -840,160 +743,145 @@ export default function Chat() {
     subscribeOnConnectedUsers,
     subscribeOnParticipantsUpdate,
     subscribeOnChatroomPresence,
-  } = useChatContext()
+  } = useChatContext();
 
   const wsIsJoined =
     !!selectedChatId &&
     canAccessSelectedConversation &&
     userIsJoined &&
-    joinedRooms.has(selectedChatId)
+    joinedRooms.has(selectedChatId);
 
   // Rooms to stay in: selected conversation (if joined) + all joined rooms (to track unread)
   const roomsToJoin = useMemo(() => {
-    const set = new Set<number>()
+    const set = new Set<number>();
     // Add all active (joined) rooms
     for (const room of activeRooms) {
-      set.add(room.id)
+      set.add(room.id);
     }
     // Ensure current tab is included even if not fully synced to activeRooms yet
     if (canAccessSelectedConversation && selectedChatId && userIsJoined) {
-      set.add(selectedChatId)
+      set.add(selectedChatId);
     }
-    return Array.from(set)
-  }, [activeRooms, canAccessSelectedConversation, selectedChatId, userIsJoined])
+    return Array.from(set);
+  }, [activeRooms, canAccessSelectedConversation, selectedChatId, userIsJoined]);
 
-  const prevRoomsToJoinRef = useRef<number[]>([])
+  const prevRoomsToJoinRef = useRef<number[]>([]);
   useEffect(() => {
     // Join all currently targeted rooms
     for (const id of roomsToJoin) {
-      joinRoom(id)
+      joinRoom(id);
     }
 
     // ONLY leave rooms that were explicitly removed from the targeted list
     // (This ensures we don't leave all rooms when navigating away from the page)
-    const removedIds = prevRoomsToJoinRef.current.filter(
-      id => !roomsToJoin.includes(id)
-    )
+    const removedIds = prevRoomsToJoinRef.current.filter((id) => !roomsToJoin.includes(id));
     for (const id of removedIds) {
-      leaveRoom(id)
+      leaveRoom(id);
     }
-    prevRoomsToJoinRef.current = roomsToJoin
-  }, [roomsToJoin, joinRoom, leaveRoom])
+    prevRoomsToJoinRef.current = roomsToJoin;
+  }, [roomsToJoin, joinRoom, leaveRoom]);
 
   // Register WS callbacks; cleanup on unmount
   useEffect(() => {
     const unsubMessage = subscribeOnMessage((message, conversationId) => {
       const isRoom =
-        activeRooms.some(r => r.id === conversationId) ||
-        (allChatrooms as Conversation[]).some(
-          (r: Conversation) => r.id === conversationId
-        )
+        activeRooms.some((r) => r.id === conversationId) ||
+        (allChatrooms as Conversation[]).some((r: Conversation) => r.id === conversationId);
 
       if (isRoom) {
-        onRoomMessage(message, conversationId)
+        onRoomMessage(message, conversationId);
       } else {
         // Handle Direct Messages
         if (message.sender_id !== currentUser?.id) {
           if (conversationId === selectedChatId) {
-            clearUnread(conversationId)
+            clearUnread(conversationId);
           } else {
-            const newUnreadCount = incrementUnread(conversationId)
-            const previousUnreadCount = newUnreadCount - 1
-            const conversation = dmConversationById.get(conversationId)
+            const newUnreadCount = incrementUnread(conversationId);
+            const previousUnreadCount = newUnreadCount - 1;
+            const conversation = dmConversationById.get(conversationId);
             const otherUserId = conversation?.participants?.find(
-              participant => participant.id !== currentUser?.id
-            )?.id
+              (participant) => participant.id !== currentUser?.id,
+            )?.id;
             const isFriendDM =
               !!conversation &&
               !conversation.is_group &&
               friendsLoaded &&
-              typeof otherUserId === 'number' &&
-              friendIds.has(otherUserId)
+              typeof otherUserId === "number" &&
+              friendIds.has(otherUserId);
 
             if (
               shouldPlayFriendDMInMessagesView(
-                conversation
-                  ? { ...conversation, is_friend_dm: isFriendDM }
-                  : undefined,
+                conversation ? { ...conversation, is_friend_dm: isFriendDM } : undefined,
                 isMessagesRoute,
-                previousUnreadCount
+                previousUnreadCount,
               )
             ) {
-              playNewMessageSound()
+              playNewMessageSound();
             }
           }
         }
 
         // Update DM list cache so last_message is current
-        queryClient.setQueryData<Conversation[]>(
-          ['chat', 'conversations'],
-          old =>
-            old?.map(conv =>
-              conv.id === conversationId
-                ? { ...conv, last_message: message }
-                : conv
-            )
-        )
+        queryClient.setQueryData<Conversation[]>(["chat", "conversations"], (old) =>
+          old?.map((conv) =>
+            conv.id === conversationId ? { ...conv, last_message: message } : conv,
+          ),
+        );
       }
-    })
-    const unsubTyping = subscribeOnTyping(
-      (convId, userId, username, isTyping, expiresInMs) => {
-        if (convId !== selectedChatId) return
-        const timeoutMs = expiresInMs ?? 5000
-        const timeoutMap = remoteTypingTimeoutsRef.current
-        if (timeoutMap[userId]) {
-          window.clearTimeout(timeoutMap[userId])
-          delete timeoutMap[userId]
-        }
-        setParticipants(prev => ({
-          ...prev,
-          [userId]: {
-            ...(prev?.[userId] || { id: userId, username }),
-            typing: isTyping,
-            online: true,
-          },
-        }))
-        if (isTyping) {
-          timeoutMap[userId] = window.setTimeout(() => {
-            setParticipants(prev => ({
-              ...prev,
-              [userId]: {
-                ...(prev?.[userId] || { id: userId, username }),
-                typing: false,
-                online: true,
-              },
-            }))
-            delete remoteTypingTimeoutsRef.current[userId]
-          }, timeoutMs)
-        }
+    });
+    const unsubTyping = subscribeOnTyping((convId, userId, username, isTyping, expiresInMs) => {
+      if (convId !== selectedChatId) return;
+      const timeoutMs = expiresInMs ?? 5000;
+      const timeoutMap = remoteTypingTimeoutsRef.current;
+      if (timeoutMap[userId]) {
+        window.clearTimeout(timeoutMap[userId]);
+        delete timeoutMap[userId];
       }
-    )
+      setParticipants((prev) => ({
+        ...prev,
+        [userId]: {
+          ...(prev?.[userId] || { id: userId, username }),
+          typing: isTyping,
+          online: true,
+        },
+      }));
+      if (isTyping) {
+        timeoutMap[userId] = window.setTimeout(() => {
+          setParticipants((prev) => ({
+            ...prev,
+            [userId]: {
+              ...(prev?.[userId] || { id: userId, username }),
+              typing: false,
+              online: true,
+            },
+          }));
+          delete remoteTypingTimeoutsRef.current[userId];
+        }, timeoutMs);
+      }
+    });
 
-    const unsubPresence = subscribeOnPresence(onPresence)
-    const unsubConnectedUsers = subscribeOnConnectedUsers(onConnectedUsers)
-    const unsubParticipants = subscribeOnParticipantsUpdate(
-      (convId, participantsList) => {
-        if (convId === selectedChatId) {
-          onParticipantsUpdate(participantsList)
-        }
+    const unsubPresence = subscribeOnPresence(onPresence);
+    const unsubConnectedUsers = subscribeOnConnectedUsers(onConnectedUsers);
+    const unsubParticipants = subscribeOnParticipantsUpdate((convId, participantsList) => {
+      if (convId === selectedChatId) {
+        onParticipantsUpdate(participantsList);
       }
-    )
-    const unsubChatroomPresence =
-      subscribeOnChatroomPresence(onChatroomPresence)
+    });
+    const unsubChatroomPresence = subscribeOnChatroomPresence(onChatroomPresence);
 
     return () => {
-      unsubMessage()
-      unsubTyping()
-      unsubPresence()
-      unsubConnectedUsers()
-      unsubParticipants()
-      unsubChatroomPresence()
-      const timeoutMap = remoteTypingTimeoutsRef.current
+      unsubMessage();
+      unsubTyping();
+      unsubPresence();
+      unsubConnectedUsers();
+      unsubParticipants();
+      unsubChatroomPresence();
+      const timeoutMap = remoteTypingTimeoutsRef.current;
       for (const timeoutID of Object.values(timeoutMap)) {
-        window.clearTimeout(timeoutID)
+        window.clearTimeout(timeoutID);
       }
-      remoteTypingTimeoutsRef.current = {}
-    }
+      remoteTypingTimeoutsRef.current = {};
+    };
   }, [
     selectedChatId,
     currentUser?.id,
@@ -1018,376 +906,347 @@ export default function Chat() {
     subscribeOnParticipantsUpdate,
     subscribeOnPresence,
     subscribeOnTyping,
-  ])
+  ]);
 
   useEffect(() => {
-    if (!selectedChatId) return
+    if (!selectedChatId) return;
 
     if (isCurrentConversationGroup) {
-      setOpenRoomTabs(prev =>
-        prev.includes(selectedChatId) ? prev : [...prev, selectedChatId]
-      )
-      roomAlertedRef.current.delete(selectedChatId)
+      setOpenRoomTabs((prev) => (prev.includes(selectedChatId) ? prev : [...prev, selectedChatId]));
+      roomAlertedRef.current.delete(selectedChatId);
     }
 
-    setUnreadByRoom(prev =>
+    setUnreadByRoom((prev) =>
       prev[selectedChatId]
         ? {
             ...prev,
             [selectedChatId]: 0,
           }
-        : prev
-    )
-    clearUnread(selectedChatId)
-  }, [selectedChatId, isCurrentConversationGroup, clearUnread])
+        : prev,
+    );
+    clearUnread(selectedChatId);
+  }, [selectedChatId, isCurrentConversationGroup, clearUnread]);
 
   useEffect(() => {
-    if (!joinedChatroomsQuery.isSuccess) return
+    if (!joinedChatroomsQuery.isSuccess) return;
 
-    setOpenRoomTabs(prev => {
-      const next = prev.filter(roomId =>
-        activeRooms.some(room => room.id === roomId)
-      )
-      return next.length === prev.length ? prev : next
-    })
-  }, [activeRooms, joinedChatroomsQuery.isSuccess])
+    setOpenRoomTabs((prev) => {
+      const next = prev.filter((roomId) => activeRooms.some((room) => room.id === roomId));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [activeRooms, joinedChatroomsQuery.isSuccess]);
 
   const handleSendMessage = useCallback(() => {
-    if (!newMessage.trim() || !selectedChatId || !currentUser) return
-    const tempId = crypto.randomUUID()
-    const messageContent = newMessage
+    if (!newMessage.trim() || !selectedChatId || !currentUser) return;
+    const tempId = crypto.randomUUID();
+    const messageContent = newMessage;
 
-    setNewMessage('')
-    setMentionQuery('')
-    setShowEmojiPicker(false)
-    ctxSendTyping(selectedChatId, false)
-    scrollToBottom(true)
+    setNewMessage("");
+    setMentionQuery("");
+    setShowEmojiPicker(false);
+    ctxSendTyping(selectedChatId, false);
+    scrollToBottom(true);
     sendMessage.mutate(
-      { content: messageContent, message_type: 'text', metadata: { tempId } },
+      { content: messageContent, message_type: "text", metadata: { tempId } },
       {
-        onError: error => {
-          console.error('Failed to send message:', error)
-          setMessageError('Failed to send message')
+        onError: (error) => {
+          console.error("Failed to send message:", error);
+          setMessageError("Failed to send message");
         },
-      }
-    )
-  }, [
-    newMessage,
-    selectedChatId,
-    currentUser,
-    sendMessage,
-    ctxSendTyping,
-    scrollToBottom,
-  ])
+      },
+    );
+  }, [newMessage, selectedChatId, currentUser, sendMessage, ctxSendTyping, scrollToBottom]);
 
   const handleInputChange = useCallback(
     (value: string) => {
-      setNewMessage(value)
-      const mentionMatch = value.match(/(?:^|\s)@([a-zA-Z0-9_]*)$/)
-      setMentionQuery(mentionMatch ? (mentionMatch[1] ?? '') : '')
-      if (!selectedChatId) return
+      setNewMessage(value);
+      const mentionMatch = value.match(/(?:^|\s)@([a-zA-Z0-9_]*)$/);
+      setMentionQuery(mentionMatch ? (mentionMatch[1] ?? "") : "");
+      if (!selectedChatId) return;
 
       if (typingDebounceRef.current) {
-        window.clearTimeout(typingDebounceRef.current)
+        window.clearTimeout(typingDebounceRef.current);
       }
       typingDebounceRef.current = window.setTimeout(() => {
-        if (value.trim()) ctxSendTyping(selectedChatId, true)
-      }, 500)
+        if (value.trim()) ctxSendTyping(selectedChatId, true);
+      }, 500);
 
       if (typingInactivityRef.current) {
-        window.clearTimeout(typingInactivityRef.current)
+        window.clearTimeout(typingInactivityRef.current);
       }
       typingInactivityRef.current = window.setTimeout(() => {
-        ctxSendTyping(selectedChatId, false)
-      }, 5000)
+        ctxSendTyping(selectedChatId, false);
+      }, 5000);
     },
-    [selectedChatId, ctxSendTyping]
-  )
+    [selectedChatId, ctxSendTyping],
+  );
 
   const applyMention = useCallback((username: string) => {
-    setNewMessage(prev =>
-      prev.replace(/(?:^|\s)@[a-zA-Z0-9_]*$/, match =>
-        match.startsWith(' ') ? ` @${username} ` : `@${username} `
-      )
-    )
-    setMentionQuery('')
-  }, [])
+    setNewMessage((prev) =>
+      prev.replace(/(?:^|\s)@[a-zA-Z0-9_]*$/, (match) =>
+        match.startsWith(" ") ? ` @${username} ` : `@${username} `,
+      ),
+    );
+    setMentionQuery("");
+  }, []);
 
   const appendEmoji = useCallback((emoji: string) => {
-    setNewMessage(prev => `${prev}${emoji}`)
-    setShowEmojiPicker(false)
-  }, [])
+    setNewMessage((prev) => `${prev}${emoji}`);
+    setShowEmojiPicker(false);
+  }, []);
 
   const handleKeyPress = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault()
-        handleSendMessage()
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSendMessage();
       }
     },
-    [handleSendMessage]
-  )
+    [handleSendMessage],
+  );
 
   useEffect(() => {
     return () => {
       if (typingDebounceRef.current) {
-        window.clearTimeout(typingDebounceRef.current)
+        window.clearTimeout(typingDebounceRef.current);
       }
       if (typingInactivityRef.current) {
-        window.clearTimeout(typingInactivityRef.current)
+        window.clearTimeout(typingInactivityRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   const handleJoinConversation = useCallback(
     (id: number) => {
       joinChatroom.mutate(id, {
         onSuccess: () => {
           // Optimistically update is_joined + participants in cache
-          queryClient.setQueryData<Conversation[]>(
-            ['chat', 'chatrooms', 'all'],
-            old =>
-              old?.map(room =>
-                room.id === id
-                  ? {
-                      ...room,
-                      is_joined: true,
-                      participants:
-                        currentUser &&
-                        !room.participants?.some(p => p.id === currentUser.id)
-                          ? [
-                              ...(room.participants || []),
-                              {
-                                id: currentUser.id,
-                                username: currentUser.username,
-                              } as User,
-                            ]
-                          : room.participants,
-                    }
-                  : room
-              )
-          )
-          queryClient.setQueryData<Conversation[]>(
-            ['chat', 'chatrooms', 'joined'],
-            old => {
-              const list = old ?? []
-              if (list.some(r => r.id === id)) return list
-              const room = queryClient
-                .getQueryData<Conversation[]>(['chat', 'chatrooms', 'all'])
-                ?.find(r => r.id === id)
-              const updated =
-                room &&
-                currentUser &&
-                !room.participants?.some(p => p.id === currentUser.id)
-                  ? {
-                      ...room,
-                      is_joined: true,
-                      participants: [
-                        ...(room.participants || []),
-                        {
-                          id: currentUser.id,
-                          username: currentUser.username,
-                        } as User,
-                      ],
-                    }
-                  : room
-                    ? { ...room, is_joined: true }
-                    : null
-              return updated ? [...list, updated] : list
-            }
-          )
-          setLeftSidebarMode('rooms')
-          setOpenRoomTabs(prev => (prev.includes(id) ? prev : [...prev, id]))
-          navigate(`/chat/${id}`)
+          queryClient.setQueryData<Conversation[]>(["chat", "chatrooms", "all"], (old) =>
+            old?.map((room) =>
+              room.id === id
+                ? {
+                    ...room,
+                    is_joined: true,
+                    participants:
+                      currentUser && !room.participants?.some((p) => p.id === currentUser.id)
+                        ? [
+                            ...(room.participants || []),
+                            {
+                              id: currentUser.id,
+                              username: currentUser.username,
+                            } as User,
+                          ]
+                        : room.participants,
+                  }
+                : room,
+            ),
+          );
+          queryClient.setQueryData<Conversation[]>(["chat", "chatrooms", "joined"], (old) => {
+            const list = old ?? [];
+            if (list.some((r) => r.id === id)) return list;
+            const room = queryClient
+              .getQueryData<Conversation[]>(["chat", "chatrooms", "all"])
+              ?.find((r) => r.id === id);
+            const updated =
+              room && currentUser && !room.participants?.some((p) => p.id === currentUser.id)
+                ? {
+                    ...room,
+                    is_joined: true,
+                    participants: [
+                      ...(room.participants || []),
+                      {
+                        id: currentUser.id,
+                        username: currentUser.username,
+                      } as User,
+                    ],
+                  }
+                : room
+                  ? { ...room, is_joined: true }
+                  : null;
+            return updated ? [...list, updated] : list;
+          });
+          setLeftSidebarMode("rooms");
+          setOpenRoomTabs((prev) => (prev.includes(id) ? prev : [...prev, id]));
+          navigate(`/chat/${id}`);
         },
-      })
+      });
     },
-    [joinChatroom, navigate, queryClient, currentUser]
-  )
+    [joinChatroom, navigate, queryClient, currentUser],
+  );
 
   const handleSelectConversation = useCallback(
     (id: number) => {
-      const conv = (conversations.find(c => c.id === id) ||
-        activeRooms.find(c => c.id === id)) as
+      const conv = (conversations.find((c) => c.id === id) ||
+        activeRooms.find((c) => c.id === id)) as
         | (Conversation & {
-            is_joined?: boolean
+            is_joined?: boolean;
           })
-        | null
+        | null;
       if (!conv) {
-        navigate(`/chat/${id}`)
-        return
+        navigate(`/chat/${id}`);
+        return;
       }
 
-      setLeftSidebarMode('rooms')
+      setLeftSidebarMode("rooms");
 
       if (conv.is_group && !isRoomJoined(conv)) {
-        handleJoinConversation(id)
+        handleJoinConversation(id);
       } else {
-        setOpenRoomTabs(prev => (prev.includes(id) ? prev : [...prev, id]))
-        setUnreadByRoom(prev =>
+        setOpenRoomTabs((prev) => (prev.includes(id) ? prev : [...prev, id]));
+        setUnreadByRoom((prev) =>
           prev[id]
             ? {
                 ...prev,
                 [id]: 0,
               }
-            : prev
-        )
-        navigate(`/chat/${id}`)
+            : prev,
+        );
+        navigate(`/chat/${id}`);
       }
     },
-    [conversations, activeRooms, navigate, handleJoinConversation, isRoomJoined]
-  )
+    [conversations, activeRooms, navigate, handleJoinConversation, isRoomJoined],
+  );
 
-  const maxRoomsPage = Math.max(
-    0,
-    Math.ceil(conversations.length / roomsPerPage) - 1
-  )
+  const maxRoomsPage = Math.max(0, Math.ceil(conversations.length / roomsPerPage) - 1);
 
   const handleNavigatePage = useCallback(
-    (direction: 'prev' | 'next') => {
-      if (direction === 'prev') {
-        setRoomsPage(prev => Math.max(0, prev - 1))
+    (direction: "prev" | "next") => {
+      if (direction === "prev") {
+        setRoomsPage((prev) => Math.max(0, prev - 1));
       } else {
-        setRoomsPage(prev => Math.min(maxRoomsPage, prev + 1))
+        setRoomsPage((prev) => Math.min(maxRoomsPage, prev + 1));
       }
     },
-    [maxRoomsPage]
-  )
+    [maxRoomsPage],
+  );
 
   const pagedRooms = useMemo(() => {
-    const start = roomsPage * roomsPerPage
-    return conversations.slice(start, start + roomsPerPage)
-  }, [conversations, roomsPage, roomsPerPage])
+    const start = roomsPage * roomsPerPage;
+    return conversations.slice(start, start + roomsPerPage);
+  }, [conversations, roomsPage, roomsPerPage]);
 
   // Reset page if it goes out of bounds (e.g. after resize)
   useEffect(() => {
     if (roomsPage > maxRoomsPage) {
-      setRoomsPage(maxRoomsPage)
+      setRoomsPage(maxRoomsPage);
     }
-  }, [roomsPage, maxRoomsPage])
+  }, [roomsPage, maxRoomsPage]);
 
   const handleCloseRoomTab = useCallback(
     (roomId: number) => {
-      let nextSelectedRoomId: number | null = null
-      setOpenRoomTabs(prev => {
-        const remaining = prev.filter(id => id !== roomId)
+      let nextSelectedRoomId: number | null = null;
+      setOpenRoomTabs((prev) => {
+        const remaining = prev.filter((id) => id !== roomId);
         if (selectedChatId === roomId) {
           nextSelectedRoomId =
             remaining[remaining.length - 1] ||
-            activeRooms.find(room => room.id !== roomId)?.id ||
-            null
+            activeRooms.find((room) => room.id !== roomId)?.id ||
+            null;
         }
-        return remaining
-      })
+        return remaining;
+      });
 
-      setUnreadByRoom(prev => {
-        if (!(roomId in prev)) return prev
-        const next = { ...prev }
-        delete next[roomId]
-        return next
-      })
-      roomAlertedRef.current.delete(roomId)
+      setUnreadByRoom((prev) => {
+        if (!(roomId in prev)) return prev;
+        const next = { ...prev };
+        delete next[roomId];
+        return next;
+      });
+      roomAlertedRef.current.delete(roomId);
 
       // Leave the room on the backend so other users see updated counts
-      leaveConversation.mutate(roomId)
+      leaveConversation.mutate(roomId);
 
       if (selectedChatId === roomId) {
         if (nextSelectedRoomId) {
-          navigate(`/chat/${nextSelectedRoomId}`)
+          navigate(`/chat/${nextSelectedRoomId}`);
         } else {
-          navigate('/chat')
+          navigate("/chat");
         }
       }
     },
-    [selectedChatId, activeRooms, navigate, leaveConversation]
-  )
+    [selectedChatId, activeRooms, navigate, leaveConversation],
+  );
 
   const handleSelectDirectMessage = useCallback(
     (conversationId: number) => {
-      setLeftSidebarMode('dms')
-      navigate(`/chat/${conversationId}`)
+      setLeftSidebarMode("dms");
+      navigate(`/chat/${conversationId}`);
     },
-    [navigate]
-  )
+    [navigate],
+  );
 
   const getDmName = useCallback(
-    (conversation: Conversation) =>
-      getDirectMessageName(conversation, currentUser?.id),
-    [currentUser?.id]
-  )
+    (conversation: Conversation) => getDirectMessageName(conversation, currentUser?.id),
+    [currentUser?.id],
+  );
 
   const getDmAvatar = useCallback(
-    (conversation: Conversation) =>
-      getDirectMessageAvatar(conversation, currentUser?.id),
-    [currentUser?.id]
-  )
+    (conversation: Conversation) => getDirectMessageAvatar(conversation, currentUser?.id),
+    [currentUser?.id],
+  );
 
   const selectedRoomOnlineCount = useMemo(
     () =>
       Object.values(participants).filter(
-        participant => participant.online || onlineUserIds.has(participant.id)
+        (participant) => participant.online || onlineUserIds.has(participant.id),
       ).length,
-    [participants, onlineUserIds]
-  )
+    [participants, onlineUserIds],
+  );
   const mentionSuggestions = useMemo(() => {
-    if (!mentionQuery && !newMessage.endsWith('@')) return []
-    const normalized = mentionQuery.toLowerCase()
+    if (!mentionQuery && !newMessage.endsWith("@")) return [];
+    const normalized = mentionQuery.toLowerCase();
     return (currentConversation?.participants || [])
-      .filter(participant => participant.id !== currentUser?.id)
-      .filter(participant =>
-        normalized
-          ? participant.username?.toLowerCase().startsWith(normalized)
-          : true
+      .filter((participant) => participant.id !== currentUser?.id)
+      .filter((participant) =>
+        normalized ? participant.username?.toLowerCase().startsWith(normalized) : true,
       )
-      .slice(0, 5)
-  }, [mentionQuery, newMessage, currentConversation, currentUser?.id])
+      .slice(0, 5);
+  }, [mentionQuery, newMessage, currentConversation, currentUser?.id]);
   const _getRoomOnlineCount = useCallback(
     (room: Conversation) => {
       // Use per-room online IDs from chatroom_presence events (authoritative)
-      const roomOnline = roomOnlineIds[room.id]
-      if (roomOnline) return roomOnline.size
+      const roomOnline = roomOnlineIds[room.id];
+      if (roomOnline) return roomOnline.size;
 
       // Fallback to global presence store
-      const roomParticipants = room.participants || []
-      if (roomParticipants.length === 0) return 0
-      return roomParticipants.filter(participant => {
+      const roomParticipants = room.participants || [];
+      if (roomParticipants.length === 0) return 0;
+      return roomParticipants.filter((participant) => {
         if (room.id === selectedChatId && participants[participant.id]) {
-          return (
-            participants[participant.id].online ||
-            onlineUserIds.has(participant.id)
-          )
+          return participants[participant.id].online || onlineUserIds.has(participant.id);
         }
-        return onlineUserIds.has(participant.id)
-      }).length
+        return onlineUserIds.has(participant.id);
+      }).length;
     },
-    [roomOnlineIds, onlineUserIds, participants, selectedChatId]
-  )
+    [roomOnlineIds, onlineUserIds, participants, selectedChatId],
+  );
 
   const typingUsers = useMemo(() => {
     return Object.values(participants)
-      .filter(p => p.typing && p.id !== currentUser?.id)
-      .map(p => p.username || 'Someone')
-  }, [participants, currentUser?.id])
+      .filter((p) => p.typing && p.id !== currentUser?.id)
+      .map((p) => p.username || "Someone");
+  }, [participants, currentUser?.id]);
 
   const moderatorIDs = useMemo(
-    () => new Set((roomModeratorsQuery.data ?? []).map(mod => mod.user_id)),
-    [roomModeratorsQuery.data]
-  )
+    () => new Set((roomModeratorsQuery.data ?? []).map((mod) => mod.user_id)),
+    [roomModeratorsQuery.data],
+  );
   const mutedIDs = useMemo(
-    () => new Set((roomMutesQuery.data ?? []).map(mute => mute.user_id)),
-    [roomMutesQuery.data]
-  )
+    () => new Set((roomMutesQuery.data ?? []).map((mute) => mute.user_id)),
+    [roomMutesQuery.data],
+  );
   const bannedIDs = useMemo(
-    () => new Set((roomBansQuery.data ?? []).map(ban => ban.user_id)),
-    [roomBansQuery.data]
-  )
+    () => new Set((roomBansQuery.data ?? []).map((ban) => ban.user_id)),
+    [roomBansQuery.data],
+  );
 
   const getModerationActions = useCallback(
     (userId: number) => {
-      if (!selectedRoomID || !isCurrentConversationGroup) return undefined
-      if (!currentUser || currentUser.id === userId) return undefined
+      if (!selectedRoomID || !isCurrentConversationGroup) return undefined;
+      if (!currentUser || currentUser.id === userId) return undefined;
       if (!canModerateCurrentRoom && !canManageCurrentRoomModerators) {
-        return undefined
+        return undefined;
       }
       return {
         canModerate: canModerateCurrentRoom,
@@ -1397,20 +1256,20 @@ export default function Chat() {
         isModerator: moderatorIDs.has(userId),
         onKick: () => {
           kickParticipant.mutate(userId, {
-            onSuccess: () => toast.success('User removed from room'),
-            onError: () => toast.error('Failed to remove user'),
-          })
+            onSuccess: () => toast.success("User removed from room"),
+            onError: () => toast.error("Failed to remove user"),
+          });
         },
         onTimeout: () => {
-          const minutesInput = window.prompt('Timeout minutes', '10')
-          if (!minutesInput) return
-          const minutes = Number.parseInt(minutesInput, 10)
+          const minutesInput = window.prompt("Timeout minutes", "10");
+          if (!minutesInput) return;
+          const minutes = Number.parseInt(minutesInput, 10);
           if (!Number.isFinite(minutes) || minutes <= 0) {
-            toast.error('Enter a positive number of minutes')
-            return
+            toast.error("Enter a positive number of minutes");
+            return;
           }
-          const reason = window.prompt('Timeout reason (optional)') ?? ''
-          const mutedUntil = new Date(Date.now() + minutes * 60 * 1000)
+          const reason = window.prompt("Timeout reason (optional)") ?? "";
+          const mutedUntil = new Date(Date.now() + minutes * 60 * 1000);
           muteParticipant.mutate(
             {
               userId,
@@ -1420,43 +1279,43 @@ export default function Chat() {
               },
             },
             {
-              onSuccess: () => toast.success('Timeout applied'),
-              onError: () => toast.error('Failed to timeout user'),
-            }
-          )
+              onSuccess: () => toast.success("Timeout applied"),
+              onError: () => toast.error("Failed to timeout user"),
+            },
+          );
         },
         onToggleBan: () => {
           if (bannedIDs.has(userId)) {
             unbanParticipant.mutate(userId, {
-              onSuccess: () => toast.success('User unbanned from room'),
-              onError: () => toast.error('Failed to unban user'),
-            })
-            return
+              onSuccess: () => toast.success("User unbanned from room"),
+              onError: () => toast.error("Failed to unban user"),
+            });
+            return;
           }
-          const reason = window.prompt('Ban reason (optional)') ?? ''
+          const reason = window.prompt("Ban reason (optional)") ?? "";
           banParticipant.mutate(
             { userId, reason: reason.trim() || undefined },
             {
-              onSuccess: () => toast.success('User banned from room'),
-              onError: () => toast.error('Failed to ban user'),
-            }
-          )
+              onSuccess: () => toast.success("User banned from room"),
+              onError: () => toast.error("Failed to ban user"),
+            },
+          );
         },
         onToggleModerator: () => {
-          if (!canManageCurrentRoomModerators) return
+          if (!canManageCurrentRoomModerators) return;
           if (moderatorIDs.has(userId)) {
             removeRoomModerator.mutate(userId, {
-              onSuccess: () => toast.success('Room moderator removed'),
-              onError: () => toast.error('Failed to remove moderator'),
-            })
-            return
+              onSuccess: () => toast.success("Room moderator removed"),
+              onError: () => toast.error("Failed to remove moderator"),
+            });
+            return;
           }
           addRoomModerator.mutate(userId, {
-            onSuccess: () => toast.success('Room moderator added'),
-            onError: () => toast.error('Failed to add moderator'),
-          })
+            onSuccess: () => toast.success("Room moderator added"),
+            onError: () => toast.error("Failed to add moderator"),
+          });
         },
-      }
+      };
     },
     [
       selectedRoomID,
@@ -1473,93 +1332,87 @@ export default function Chat() {
       unbanParticipant,
       addRoomModerator,
       removeRoomModerator,
-    ]
-  )
+    ],
+  );
 
   return (
-    <div className='flex h-full min-h-0 flex-col overflow-hidden bg-background'>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
       {allError && (
-        <div className='border-b border-destructive bg-destructive/15 p-3'>
-          <p className='text-sm text-destructive'>
-            Error loading chatrooms: {String(allError)}
-          </p>
+        <div className="border-b border-destructive bg-destructive/15 p-3">
+          <p className="text-sm text-destructive">Error loading chatrooms: {String(allError)}</p>
         </div>
       )}
 
-      <div className='flex min-h-0 flex-1 overflow-hidden'>
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <aside
           className={cn(
-            'shrink-0 overflow-hidden bg-card/40 transition-all duration-200',
+            "shrink-0 overflow-hidden bg-card/40 transition-all duration-200",
             isMobile
               ? showMobileList
-                ? 'flex flex-1 flex-col'
-                : 'hidden'
+                ? "flex flex-1 flex-col"
+                : "hidden"
               : cn(
-                  'hidden md:flex md:flex-col',
-                  showChatrooms
-                    ? 'w-64 2xl:w-80 border-r border-border/70'
-                    : 'w-0 border-r-0'
-                )
+                  "hidden md:flex md:flex-col",
+                  showChatrooms ? "w-64 2xl:w-80 border-r border-border/70" : "w-0 border-r-0",
+                ),
           )}
         >
-          <div className='flex h-12 items-center border-b border-border/70 px-2'>
+          <div className="flex h-12 items-center border-b border-border/70 px-2">
             {!isMobile && (
               <button
-                type='button'
+                type="button"
                 onClick={() => setShowChatrooms(false)}
-                className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
-                aria-label='Collapse sidebar'
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                aria-label="Collapse sidebar"
               >
-                <PanelLeftClose className='h-4 w-4' />
+                <PanelLeftClose className="h-4 w-4" />
               </button>
             )}
-            <h2 className='ml-2 flex flex-col min-w-0'>
-              <div className='flex items-center gap-2 text-sm font-semibold'>
-                {leftSidebarMode === 'rooms' ? (
-                  <Hash className='h-4 w-4 text-primary shrink-0' />
+            <h2 className="ml-2 flex flex-col min-w-0">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                {leftSidebarMode === "rooms" ? (
+                  <Hash className="h-4 w-4 text-primary shrink-0" />
                 ) : (
-                  <MessageCircle className='h-4 w-4 text-primary shrink-0' />
+                  <MessageCircle className="h-4 w-4 text-primary shrink-0" />
                 )}
-                <span className='truncate'>
-                  {leftSidebarMode === 'rooms'
+                <span className="truncate">
+                  {leftSidebarMode === "rooms"
                     ? currentConversation && isCurrentConversationGroup
                       ? currentConversation.name
-                      : 'Chatrooms'
-                    : 'Direct Messages'}
+                      : "Chatrooms"
+                    : "Direct Messages"}
                 </span>
               </div>
-              {leftSidebarMode === 'rooms' &&
-                currentConversation &&
-                isCurrentConversationGroup && (
-                  <p className='text-[10px] text-muted-foreground'>
-                    {selectedRoomOnlineCount} members online
-                  </p>
-                )}
+              {leftSidebarMode === "rooms" && currentConversation && isCurrentConversationGroup && (
+                <p className="text-[10px] text-muted-foreground">
+                  {selectedRoomOnlineCount} members online
+                </p>
+              )}
             </h2>
           </div>
 
-          <div className='border-b border-border/70 p-2'>
-            <div className='grid grid-cols-2 gap-1'>
+          <div className="border-b border-border/70 p-2">
+            <div className="grid grid-cols-2 gap-1">
               <button
-                type='button'
-                onClick={() => setLeftSidebarMode('rooms')}
+                type="button"
+                onClick={() => setLeftSidebarMode("rooms")}
                 className={cn(
-                  'rounded-md px-2 py-1.5 text-xs font-semibold transition-colors',
-                  leftSidebarMode === 'rooms'
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                  "rounded-md px-2 py-1.5 text-xs font-semibold transition-colors",
+                  leftSidebarMode === "rooms"
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                 )}
               >
                 Rooms
               </button>
               <button
-                type='button'
-                onClick={() => setLeftSidebarMode('dms')}
+                type="button"
+                onClick={() => setLeftSidebarMode("dms")}
                 className={cn(
-                  'rounded-md px-2 py-1.5 text-xs font-semibold transition-colors',
-                  leftSidebarMode === 'dms'
-                    ? 'bg-primary/15 text-primary'
-                    : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                  "rounded-md px-2 py-1.5 text-xs font-semibold transition-colors",
+                  leftSidebarMode === "dms"
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                 )}
               >
                 DM
@@ -1567,117 +1420,110 @@ export default function Chat() {
             </div>
           </div>
 
-          {leftSidebarMode === 'rooms' ? (
-            <div className='flex flex-1 flex-col overflow-hidden'>
-              <div className='flex shrink-0 items-center justify-between border-b border-border/70 px-3 py-2'>
-                <div className='flex items-center gap-3'>
-                  <p className='text-[10px] font-bold uppercase tracking-wider text-muted-foreground'>
+          {leftSidebarMode === "rooms" ? (
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <div className="flex shrink-0 items-center justify-between border-b border-border/70 px-3 py-2">
+                <div className="flex items-center gap-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     Page {roomsPage + 1} of {maxRoomsPage + 1}
                   </p>
                   {isMobile && (
                     <button
-                      type='button'
+                      type="button"
                       onClick={() => setShowMobileList(false)}
-                      className='rounded-full bg-primary/15 px-2.5 py-0.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/25'
+                      className="rounded-full bg-primary/15 px-2.5 py-0.5 text-[10px] font-bold text-primary transition-colors hover:bg-primary/25"
                     >
                       Exit List
                     </button>
                   )}
                 </div>
-                <div className='flex items-center gap-1'>
+                <div className="flex items-center gap-1">
                   <button
-                    type='button'
+                    type="button"
                     disabled={roomsPage === 0}
-                    onClick={() => handleNavigatePage('prev')}
-                    className='inline-flex h-6 w-6 items-center justify-center rounded border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground disabled:opacity-30'
-                    title='Previous page'
+                    onClick={() => handleNavigatePage("prev")}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground disabled:opacity-30"
+                    title="Previous page"
                   >
-                    <ChevronLeft className='h-3.5 w-3.5' />
+                    <ChevronLeft className="h-3.5 w-3.5" />
                   </button>
                   <button
-                    type='button'
+                    type="button"
                     disabled={roomsPage === maxRoomsPage}
-                    onClick={() => handleNavigatePage('next')}
-                    className='inline-flex h-6 w-6 items-center justify-center rounded border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground disabled:opacity-30'
-                    title='Next page'
+                    onClick={() => handleNavigatePage("next")}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground disabled:opacity-30"
+                    title="Next page"
                   >
-                    <ChevronRight className='h-3.5 w-3.5' />
+                    <ChevronRight className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
 
-              <div
-                className='min-h-0 flex-1 overflow-hidden p-1'
-                ref={roomsWrapperRef}
-              >
+              <div className="min-h-0 flex-1 overflow-hidden p-1" ref={roomsWrapperRef}>
                 {allLoading ? (
-                  <div className='p-4 text-center text-xs text-muted-foreground'>
+                  <div className="p-4 text-center text-xs text-muted-foreground">
                     Loading rooms...
                   </div>
                 ) : conversations.length === 0 ? (
-                  <div className='p-4 text-center text-xs text-muted-foreground'>
+                  <div className="p-4 text-center text-xs text-muted-foreground">
                     No rooms available.
                   </div>
                 ) : (
-                  <div className='space-y-0.5'>
-                    {pagedRooms.map(room => {
-                      const joined = isRoomJoined(room)
-                      const selected = selectedChatId === room.id
-                      const onlineCount = _getRoomOnlineCount(room)
-                      const hasUnread = (unreadByRoom[room.id] || 0) > 0
+                  <div className="space-y-0.5">
+                    {pagedRooms.map((room) => {
+                      const joined = isRoomJoined(room);
+                      const selected = selectedChatId === room.id;
+                      const onlineCount = _getRoomOnlineCount(room);
+                      const hasUnread = (unreadByRoom[room.id] || 0) > 0;
 
                       return (
                         <button
                           key={`room-item-${room.id}`}
-                          type='button'
+                          type="button"
                           onClick={() => handleSelectConversation(room.id)}
-                          style={{ height: '32px' }}
+                          style={{ height: "32px" }}
                           className={cn(
-                            'group relative flex w-full items-center gap-2 rounded-md border px-2 py-0 transition-all',
+                            "group relative flex w-full items-center gap-2 rounded-md border px-2 py-0 transition-all",
                             selected
-                              ? 'border-primary/30 bg-primary/10 text-primary'
+                              ? "border-primary/30 bg-primary/10 text-primary"
                               : hasUnread
-                                ? 'border-primary/20 bg-primary/5 text-foreground animate-pulse shadow-[inset_0_0_8px_rgba(59,130,246,0.15)]'
-                                : 'border-transparent hover:bg-muted/60'
+                                ? "border-primary/20 bg-primary/5 text-foreground animate-pulse shadow-[inset_0_0_8px_rgba(59,130,246,0.15)]"
+                                : "border-transparent hover:bg-muted/60",
                           )}
                         >
                           <Hash
                             className={cn(
-                              'h-3 w-3 shrink-0',
-                              selected || hasUnread
-                                ? 'text-primary'
-                                : 'text-muted-foreground'
+                              "h-3 w-3 shrink-0",
+                              selected || hasUnread ? "text-primary" : "text-muted-foreground",
                             )}
                           />
-                          <div className='min-w-0 flex-1 overflow-hidden'>
-                            <div className='flex items-center justify-between gap-2'>
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <div className="flex items-center justify-between gap-2">
                               <span
                                 className={cn(
-                                  'truncate text-[12px]',
-                                  selected || hasUnread
-                                    ? 'font-bold'
-                                    : 'font-medium'
+                                  "truncate text-[12px]",
+                                  selected || hasUnread ? "font-bold" : "font-medium",
                                 )}
                               >
                                 {room.name || `Room ${room.id}`}
                               </span>
-                              <div className='flex items-center gap-1.5'>
+                              <div className="flex items-center gap-1.5">
                                 {hasUnread && (
-                                  <span className='h-2 w-2 shrink-0 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.6)]' />
+                                  <span className="h-2 w-2 shrink-0 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
                                 )}
                                 {onlineCount > 0 && (
-                                  <span className='h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500' />
+                                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
                                 )}
                               </div>
                             </div>
                           </div>
                           {!joined && (
-                            <span className='rounded bg-primary/10 px-1 py-0.5 text-[8px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity'>
+                            <span className="rounded bg-primary/10 px-1 py-0.5 text-[8px] font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                               JOIN
                             </span>
                           )}
                         </button>
-                      )
+                      );
                     })}
                   </div>
                 )}
@@ -1685,85 +1531,79 @@ export default function Chat() {
             </div>
           ) : (
             <>
-              <div className='border-b border-border/70 px-3 py-2'>
-                <p className='text-[11px] text-muted-foreground'>
+              <div className="border-b border-border/70 px-3 py-2">
+                <p className="text-[11px] text-muted-foreground">
                   {dmConversations.length} conversations
                 </p>
               </div>
-              <ScrollArea className='min-h-0 flex-1'>
-                <div className='space-y-1.5 p-2'>
+              <ScrollArea className="min-h-0 flex-1">
+                <div className="space-y-1.5 p-2">
                   {conversationsLoading ? (
-                    <div className='p-4 text-center text-xs text-muted-foreground'>
+                    <div className="p-4 text-center text-xs text-muted-foreground">
                       Loading conversations...
                     </div>
                   ) : dmConversations.length === 0 ? (
-                    <div className='p-4 text-center text-xs text-muted-foreground'>
+                    <div className="p-4 text-center text-xs text-muted-foreground">
                       No direct conversations yet.
                     </div>
                   ) : (
-                    dmConversations.map(conversation => {
+                    dmConversations.map((conversation) => {
                       const otherUser = conversation.participants?.find(
-                        p => p.id !== currentUser?.id
-                      )
-                      const isOnline = otherUser
-                        ? onlineUserIds.has(otherUser.id)
-                        : false
-                      const isSelected = selectedChatId === conversation.id
-                      const hasUnread = getUnread(conversation.id) > 0
+                        (p) => p.id !== currentUser?.id,
+                      );
+                      const isOnline = otherUser ? onlineUserIds.has(otherUser.id) : false;
+                      const isSelected = selectedChatId === conversation.id;
+                      const hasUnread = getUnread(conversation.id) > 0;
 
                       return (
                         <button
                           key={`dm-${conversation.id}`}
-                          type='button'
-                          onClick={() =>
-                            handleSelectDirectMessage(conversation.id)
-                          }
+                          type="button"
+                          onClick={() => handleSelectDirectMessage(conversation.id)}
                           className={cn(
-                            'flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-colors',
+                            "flex w-full items-center gap-2 rounded-lg border px-2 py-1.5 text-left transition-colors",
                             isSelected
-                              ? 'border-primary/30 bg-primary/10'
+                              ? "border-primary/30 bg-primary/10"
                               : hasUnread
-                                ? 'border-primary/20 bg-primary/5 animate-pulse'
-                                : 'border-transparent hover:border-border/60 hover:bg-muted/60'
+                                ? "border-primary/20 bg-primary/5 animate-pulse"
+                                : "border-transparent hover:border-border/60 hover:bg-muted/60",
                           )}
                         >
-                          <div className='relative'>
-                            <Avatar className='h-7 w-7 border'>
+                          <div className="relative">
+                            <Avatar className="h-7 w-7 border">
                               <AvatarImage src={getDmAvatar(conversation)} />
-                              <AvatarFallback className='text-[10px]'>
+                              <AvatarFallback className="text-[10px]">
                                 {getInitials(getDmName(conversation))}
                               </AvatarFallback>
                             </Avatar>
                             {hasUnread && (
-                              <span className='absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary border-2 border-background shadow-[0_0_8px_rgba(59,130,246,0.6)]' />
+                              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary border-2 border-background shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
                             )}
                           </div>
-                          <div className='min-w-0 flex-1'>
-                            <div className='flex items-center gap-2'>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
                               <p
                                 className={cn(
-                                  'truncate text-[12px]',
-                                  isSelected || hasUnread
-                                    ? 'font-bold'
-                                    : 'font-semibold'
+                                  "truncate text-[12px]",
+                                  isSelected || hasUnread ? "font-bold" : "font-semibold",
                                 )}
                               >
                                 {getDmName(conversation)}
                               </p>
                               <span
                                 className={cn(
-                                  'h-1.5 w-1.5 shrink-0 rounded-full',
-                                  isOnline ? 'bg-emerald-500' : 'bg-gray-400'
+                                  "h-1.5 w-1.5 shrink-0 rounded-full",
+                                  isOnline ? "bg-emerald-500" : "bg-gray-400",
                                 )}
                               />
                             </div>
                             {conversation.last_message && (
                               <p
                                 className={cn(
-                                  'truncate text-[10px]',
+                                  "truncate text-[10px]",
                                   hasUnread
-                                    ? 'text-foreground font-medium'
-                                    : 'text-muted-foreground'
+                                    ? "text-foreground font-medium"
+                                    : "text-muted-foreground",
                                 )}
                               >
                                 {conversation.last_message.content}
@@ -1771,7 +1611,7 @@ export default function Chat() {
                             )}
                           </div>
                         </button>
-                      )
+                      );
                     })
                   )}
                 </div>
@@ -1782,130 +1622,119 @@ export default function Chat() {
 
         <section
           className={cn(
-            'min-h-0 flex-1 flex-col overflow-hidden',
-            isMobile && showMobileList ? 'hidden' : 'flex'
+            "min-h-0 flex-1 flex-col overflow-hidden",
+            isMobile && showMobileList ? "hidden" : "flex",
           )}
         >
-          <div className='flex h-12 items-center gap-2 border-b border-border/70 bg-card/35 px-3'>
+          <div className="flex h-12 items-center gap-2 border-b border-border/70 bg-card/35 px-3">
             {isMobile && (
               <button
-                type='button'
+                type="button"
                 onClick={() => {
-                  setShowMobileList(true)
+                  setShowMobileList(true);
                 }}
-                className='inline-flex h-8 items-center gap-1.5 rounded-lg border border-border/70 px-2.5 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
-                aria-label='Back to conversations'
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border/70 px-2.5 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                aria-label="Back to conversations"
               >
-                <ChevronLeft className='h-4 w-4' />
-                <span className='text-xs font-semibold'>Rooms</span>
+                <ChevronLeft className="h-4 w-4" />
+                <span className="text-xs font-semibold">Rooms</span>
               </button>
             )}
             {!isMobile && !showChatrooms && (
               <button
-                type='button'
+                type="button"
                 onClick={() => setShowChatrooms(true)}
-                className='inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
-                aria-label='Expand sidebar'
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                aria-label="Expand sidebar"
               >
-                <PanelLeftOpen className='h-4 w-4' />
+                <PanelLeftOpen className="h-4 w-4" />
               </button>
             )}
 
             {openRoomTabs.length > 0 ? (
-              <div className='flex flex-1 items-center gap-2 overflow-x-auto py-1'>
-                {openRoomTabs.map(roomId => {
+              <div className="flex flex-1 items-center gap-2 overflow-x-auto py-1">
+                {openRoomTabs.map((roomId) => {
                   const room =
-                    conversations.find(c => c.id === roomId) ||
-                    activeRooms.find(c => c.id === roomId)
-                  if (!room) return null
-                  const unread = unreadByRoom[roomId] || 0
-                  const selected = selectedChatId === roomId
+                    conversations.find((c) => c.id === roomId) ||
+                    activeRooms.find((c) => c.id === roomId);
+                  if (!room) return null;
+                  const unread = unreadByRoom[roomId] || 0;
+                  const selected = selectedChatId === roomId;
                   return (
                     <div
                       key={`room-tab-${roomId}`}
                       className={cn(
-                        'inline-flex shrink-0 items-center gap-1 rounded-full border pr-1 text-xs font-semibold transition-colors',
+                        "inline-flex shrink-0 items-center gap-1 rounded-full border pr-1 text-xs font-semibold transition-colors",
                         selected
-                          ? 'border-primary/50 bg-primary/15 text-primary'
+                          ? "border-primary/50 bg-primary/15 text-primary"
                           : unread > 0
-                            ? 'border-primary/50 bg-primary/5 shadow-[0_0_12px_rgba(59,130,246,0.25)] animate-pulse'
-                            : 'border-border/70 bg-card hover:bg-muted/60'
+                            ? "border-primary/50 bg-primary/5 shadow-[0_0_12px_rgba(59,130,246,0.25)] animate-pulse"
+                            : "border-border/70 bg-card hover:bg-muted/60",
                       )}
                     >
                       <button
-                        type='button'
+                        type="button"
                         onClick={() => handleSelectConversation(roomId)}
-                        className='inline-flex items-center gap-2 px-3 py-1.5'
+                        className="inline-flex items-center gap-2 px-3 py-1.5"
                       >
                         <Hash
-                          className={cn(
-                            'h-3 w-3',
-                            unread > 0 && !selected && 'text-primary'
-                          )}
+                          className={cn("h-3 w-3", unread > 0 && !selected && "text-primary")}
                         />
                         <span
                           className={cn(
-                            'max-w-28 truncate',
-                            unread > 0 && !selected && 'font-bold'
+                            "max-w-28 truncate",
+                            unread > 0 && !selected && "font-bold",
                           )}
                         >
                           {room.name || `Room ${room.id}`}
                         </span>
                         {unread > 0 && (
-                          <span className='h-2 w-2 shrink-0 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.6)]' />
+                          <span className="h-2 w-2 shrink-0 rounded-full bg-primary shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
                         )}
                       </button>
                       <button
-                        type='button'
+                        type="button"
                         aria-label={`Close room tab ${room.name || room.id}`}
-                        className='inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
-                        onClick={event => {
-                          event.preventDefault()
-                          event.stopPropagation()
-                          handleCloseRoomTab(roomId)
+                        className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          handleCloseRoomTab(roomId);
                         }}
                       >
-                        <X className='h-3 w-3' />
+                        <X className="h-3 w-3" />
                       </button>
                     </div>
-                  )
+                  );
                 })}
               </div>
             ) : !currentConversation ? (
-              <p className='text-sm font-medium text-muted-foreground'>
-                {leftSidebarMode === 'rooms'
-                  ? 'Select a chatroom'
-                  : 'Select a direct message'}
+              <p className="text-sm font-medium text-muted-foreground">
+                {leftSidebarMode === "rooms" ? "Select a chatroom" : "Select a direct message"}
               </p>
             ) : null}
 
             {currentConversation && (
               <button
-                type='button'
+                type="button"
                 onClick={() => setShowTimestamps(!showTimestamps)}
-                className='ml-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground'
-                title={showTimestamps ? 'Hide timestamps' : 'Show timestamps'}
+                className="ml-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                title={showTimestamps ? "Hide timestamps" : "Show timestamps"}
               >
                 {showTimestamps ? (
-                  <Clock className='h-4 w-4' />
+                  <Clock className="h-4 w-4" />
                 ) : (
-                  <Timer className='h-4 w-4 text-muted-foreground/50' />
+                  <Timer className="h-4 w-4 text-muted-foreground/50" />
                 )}
               </button>
             )}
           </div>
 
-          <ScrollArea
-            className='min-h-0 flex-1'
-            ref={scrollAreaRef}
-            onScroll={handleScroll}
-          >
+          <ScrollArea className="min-h-0 flex-1" ref={scrollAreaRef} onScroll={handleScroll}>
             <div
               className={cn(
-                'mx-auto w-full p-4',
-                isCurrentConversationGroup
-                  ? 'max-w-full 2xl:max-w-6xl'
-                  : 'max-w-3xl'
+                "mx-auto w-full p-4",
+                isCurrentConversationGroup ? "max-w-full 2xl:max-w-6xl" : "max-w-3xl",
               )}
             >
               <MessageList
@@ -1923,55 +1752,46 @@ export default function Chat() {
             </div>
           </ScrollArea>
 
-          <div className='border-t border-border/70 bg-card/25 p-3'>
+          <div className="border-t border-border/70 bg-card/25 p-3">
             <div
               className={cn(
-                'mx-auto w-full',
-                isCurrentConversationGroup
-                  ? 'max-w-full 2xl:max-w-6xl'
-                  : 'max-w-3xl'
+                "mx-auto w-full",
+                isCurrentConversationGroup ? "max-w-full 2xl:max-w-6xl" : "max-w-3xl",
               )}
             >
               {messageError && (
-                <p className='mb-2 px-1 text-xs font-medium text-destructive'>
-                  {messageError}
-                </p>
+                <p className="mb-2 px-1 text-xs font-medium text-destructive">{messageError}</p>
               )}
 
-              <TypingIndicator
-                typingUsers={typingUsers}
-                className='mb-2 px-1'
-              />
+              <TypingIndicator typingUsers={typingUsers} className="mb-2 px-1" />
 
               {userIsJoined ? (
-                <div className='relative flex items-center gap-2'>
-                  <div className='relative flex-1'>
+                <div className="relative flex items-center gap-2">
+                  <div className="relative flex-1">
                     <Input
-                      placeholder={
-                        wsIsJoined ? 'Type a message...' : 'Connecting...'
-                      }
+                      placeholder={wsIsJoined ? "Type a message..." : "Connecting..."}
                       value={newMessage}
-                      onChange={e => handleInputChange(e.target.value)}
+                      onChange={(e) => handleInputChange(e.target.value)}
                       onKeyDown={handleKeyPress}
                       disabled={!wsIsJoined}
-                      className='h-10 flex-1 rounded-full border-border/60 bg-card pr-12'
+                      className="h-10 flex-1 rounded-full border-border/60 bg-card pr-12"
                     />
                     <button
-                      type='button'
-                      onClick={() => setShowEmojiPicker(prev => !prev)}
-                      className='absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground'
-                      title='Insert emoji'
+                      type="button"
+                      onClick={() => setShowEmojiPicker((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                      title="Insert emoji"
                     >
-                      <Smile className='h-4 w-4' />
+                      <Smile className="h-4 w-4" />
                     </button>
                     {showEmojiPicker && (
-                      <div className='absolute bottom-12 right-0 z-20 flex max-w-52 flex-wrap gap-1 rounded-lg border border-border bg-card p-2 shadow-lg'>
-                        {QUICK_EMOJI.map(emoji => (
+                      <div className="absolute bottom-12 right-0 z-20 flex max-w-52 flex-wrap gap-1 rounded-lg border border-border bg-card p-2 shadow-lg">
+                        {QUICK_EMOJI.map((emoji) => (
                           <button
                             key={`chat-emoji-${emoji}`}
-                            type='button'
+                            type="button"
                             onClick={() => appendEmoji(emoji)}
-                            className='inline-flex h-7 w-7 items-center justify-center rounded text-base transition-colors hover:bg-muted'
+                            className="inline-flex h-7 w-7 items-center justify-center rounded text-base transition-colors hover:bg-muted"
                           >
                             {emoji}
                           </button>
@@ -1979,17 +1799,15 @@ export default function Chat() {
                       </div>
                     )}
                     {mentionSuggestions.length > 0 && (
-                      <div className='absolute bottom-12 left-0 z-20 w-full rounded-lg border border-border bg-card p-1 shadow-lg'>
-                        {mentionSuggestions.map(participant => (
+                      <div className="absolute bottom-12 left-0 z-20 w-full rounded-lg border border-border bg-card p-1 shadow-lg">
+                        {mentionSuggestions.map((participant) => (
                           <button
                             key={`chat-mention-${participant.id}`}
-                            type='button'
+                            type="button"
                             onClick={() => applyMention(participant.username)}
-                            className='flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted'
+                            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
                           >
-                            <span className='font-semibold'>
-                              @{participant.username}
-                            </span>
+                            <span className="font-semibold">@{participant.username}</span>
                           </button>
                         ))}
                       </div>
@@ -1998,25 +1816,21 @@ export default function Chat() {
                   <Button
                     onClick={handleSendMessage}
                     disabled={!newMessage.trim() || !wsIsJoined}
-                    className='h-10 w-10 rounded-full p-0'
+                    className="h-10 w-10 rounded-full p-0"
                   >
-                    <Send className='h-4 w-4' />
+                    <Send className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
-                <div className='flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/30 px-3 py-2'>
-                  <p className='text-xs text-muted-foreground'>
-                    Join this room to send messages.
-                  </p>
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-muted/30 px-3 py-2">
+                  <p className="text-xs text-muted-foreground">Join this room to send messages.</p>
                   <Button
-                    onClick={() =>
-                      selectedChatId && handleJoinConversation(selectedChatId)
-                    }
+                    onClick={() => selectedChatId && handleJoinConversation(selectedChatId)}
                     disabled={joinChatroom.isPending}
-                    size='sm'
-                    className='rounded-lg'
+                    size="sm"
+                    className="rounded-lg"
                   >
-                    {joinChatroom.isPending ? 'Joining...' : 'Join'}
+                    {joinChatroom.isPending ? "Joining..." : "Join"}
                   </Button>
                 </div>
               )}
@@ -2026,40 +1840,36 @@ export default function Chat() {
 
         <aside
           className={cn(
-            'hidden shrink-0 border-l border-border/70 bg-card/35 transition-all duration-200 lg:flex lg:flex-col',
-            showParticipants ? 'w-60 2xl:w-72' : 'w-12'
+            "hidden shrink-0 border-l border-border/70 bg-card/35 transition-all duration-200 lg:flex lg:flex-col",
+            showParticipants ? "w-60 2xl:w-72" : "w-12",
           )}
         >
-          <div className='flex h-12 items-center border-b border-border/70 px-2'>
+          <div className="flex h-12 items-center border-b border-border/70 px-2">
             {showParticipants && (
-              <h2 className='ml-1 flex items-center gap-2 text-sm font-semibold'>
-                <Users className='h-4 w-4' />
+              <h2 className="ml-1 flex items-center gap-2 text-sm font-semibold">
+                <Users className="h-4 w-4" />
                 Members
               </h2>
             )}
             <button
-              type='button'
-              onClick={() => setShowParticipants(prev => !prev)}
+              type="button"
+              onClick={() => setShowParticipants((prev) => !prev)}
               className={cn(
-                'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground',
-                showParticipants ? 'ml-auto' : 'mx-auto'
+                "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground",
+                showParticipants ? "ml-auto" : "mx-auto",
               )}
-              aria-label={
-                showParticipants
-                  ? 'Collapse members panel'
-                  : 'Expand members panel'
-              }
+              aria-label={showParticipants ? "Collapse members panel" : "Expand members panel"}
             >
               {showParticipants ? (
-                <PanelRightClose className='h-4 w-4' />
+                <PanelRightClose className="h-4 w-4" />
               ) : (
-                <PanelRightOpen className='h-4 w-4' />
+                <PanelRightOpen className="h-4 w-4" />
               )}
             </button>
           </div>
           {showParticipants && (
-            <ScrollArea className='min-h-0 flex-1'>
-              <div className='p-2'>
+            <ScrollArea className="min-h-0 flex-1">
+              <div className="p-2">
                 <ParticipantsList
                   participants={participants}
                   onlineUserIds={onlineUserIds}
@@ -2069,18 +1879,17 @@ export default function Chat() {
             </ScrollArea>
           )}
           {showParticipants && (
-            <div className='border-t border-border/70 px-3 py-2 text-[11px] text-muted-foreground'>
+            <div className="border-t border-border/70 px-3 py-2 text-[11px] text-muted-foreground">
               {
                 Object.values(participants).filter(
-                  participant =>
-                    participant.online || onlineUserIds.has(participant.id)
+                  (participant) => participant.online || onlineUserIds.has(participant.id),
                 ).length
-              }{' '}
+              }{" "}
               online in room
             </div>
           )}
         </aside>
       </div>
     </div>
-  )
+  );
 }

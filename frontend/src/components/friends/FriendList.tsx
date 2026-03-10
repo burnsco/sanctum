@@ -1,90 +1,74 @@
-import { Link as LinkIcon, MessageCircle, UserX } from 'lucide-react'
-import { useCallback } from 'react'
-import { Link } from 'react-router-dom'
-import { toast } from 'sonner'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { useFriends, useRemoveFriend } from '@/hooks/useFriends'
-import { usePresenceStore } from '@/hooks/usePresence'
-import { getAvatarUrl } from '@/lib/chat-utils'
-import { useChatDockStore } from '@/stores/useChatDockStore'
+import { Link as LinkIcon, MessageCircle, UserX } from "lucide-react";
+import { useCallback } from "react";
+import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useFriends, useRemoveFriend } from "@/hooks/useFriends";
+import { usePresenceStore } from "@/hooks/usePresence";
+import { getAvatarUrl } from "@/lib/chat-utils";
+import { useChatDockStore } from "@/stores/useChatDockStore";
 
 export function FriendList() {
-  const { data: friends, isLoading } = useFriends()
-  const onlineUserIds = usePresenceStore(state => state.onlineUserIds)
-  const removeFriend = useRemoveFriend()
-  const { setActiveConversation, open } = useChatDockStore()
+  const { data: friends, isLoading } = useFriends();
+  const onlineUserIds = usePresenceStore((state) => state.onlineUserIds);
+  const removeFriend = useRemoveFriend();
+  const { setActiveConversation, open } = useChatDockStore();
 
   const handleMessage = useCallback(
     (friendId: number) => {
-      setActiveConversation(-friendId)
-      open()
+      setActiveConversation(-friendId);
+      open();
     },
-    [setActiveConversation, open]
-  )
+    [setActiveConversation, open],
+  );
 
   if (isLoading) {
-    return (
-      <div className='p-4 text-center text-muted-foreground'>
-        Loading friends...
-      </div>
-    )
+    return <div className="p-4 text-center text-muted-foreground">Loading friends...</div>;
   }
 
   if (!friends || friends.length === 0) {
     return (
-      <div className='flex flex-col items-center justify-center p-8 text-center border rounded-lg bg-card/50'>
-        <p className='text-muted-foreground mb-4'>
-          You haven't added any friends yet.
-        </p>
-        <Button variant='secondary' asChild>
-          <Link to='/friends?tab=find'>Find People</Link>
+      <div className="flex flex-col items-center justify-center p-8 text-center border rounded-lg bg-card/50">
+        <p className="text-muted-foreground mb-4">You haven't added any friends yet.</p>
+        <Button variant="secondary" asChild>
+          <Link to="/friends?tab=find">Find People</Link>
         </Button>
       </div>
-    )
+    );
   }
 
   return (
-    <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-      {friends.map(friend => (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {friends.map((friend) => (
         <Card key={friend.id}>
-          <CardHeader className='flex flex-row items-center gap-4 pb-2'>
-            <Avatar className='h-10 w-10 border border-border/60'>
+          <CardHeader className="flex flex-row items-center gap-4 pb-2">
+            <Avatar className="h-10 w-10 border border-border/60">
               <AvatarImage
                 src={friend.avatar || getAvatarUrl(friend.username)}
                 alt={friend.username}
               />
-              <AvatarFallback>
-                {friend.username[0].toUpperCase()}
-              </AvatarFallback>
+              <AvatarFallback>{friend.username[0].toUpperCase()}</AvatarFallback>
             </Avatar>
-            <div className='flex-1 overflow-hidden'>
-              <CardTitle className='text-base truncate'>
-                {friend.username}
-              </CardTitle>
-              <CardDescription className='truncate text-xs'>
+            <div className="flex-1 overflow-hidden">
+              <CardTitle className="text-base truncate">{friend.username}</CardTitle>
+              <CardDescription className="truncate text-xs">
                 {onlineUserIds.has(friend.id) ? (
-                  'Online now'
+                  "Online now"
                 ) : (
-                  <span className='flex items-center gap-2'>
-                    <span className='truncate'>{friend.email}</span>
+                  <span className="flex items-center gap-2">
+                    <span className="truncate">{friend.email}</span>
                     <button
-                      type='button'
-                      className='text-[11px] inline-flex items-center gap-1 rounded px-2 py-0.5 bg-muted/60 hover:bg-muted'
+                      type="button"
+                      className="text-[11px] inline-flex items-center gap-1 rounded px-2 py-0.5 bg-muted/60 hover:bg-muted"
                       onClick={() => {
-                        const url = `${window.location.origin}/users/${friend.id}`
-                        void navigator.clipboard.writeText(url)
-                        toast.success('Profile URL copied')
+                        const url = `${window.location.origin}/users/${friend.id}`;
+                        void navigator.clipboard.writeText(url);
+                        toast.success("Profile URL copied");
                       }}
                     >
-                      <LinkIcon className='w-3 h-3' />
+                      <LinkIcon className="w-3 h-3" />
                       <span>Share</span>
                     </button>
                   </span>
@@ -92,37 +76,37 @@ export function FriendList() {
               </CardDescription>
             </div>
             <span
-              className={`h-2.5 w-2.5 rounded-full ${onlineUserIds.has(friend.id) ? 'bg-emerald-500' : 'bg-gray-400'}`}
-              title={onlineUserIds.has(friend.id) ? 'Online' : 'Offline'}
+              className={`h-2.5 w-2.5 rounded-full ${onlineUserIds.has(friend.id) ? "bg-emerald-500" : "bg-gray-400"}`}
+              title={onlineUserIds.has(friend.id) ? "Online" : "Offline"}
             />
           </CardHeader>
           <CardContent>
-            <div className='flex gap-2 mt-2'>
+            <div className="flex gap-2 mt-2">
               <Button
-                variant='secondary'
-                size='sm'
-                className='flex-1'
+                variant="secondary"
+                size="sm"
+                className="flex-1"
                 onClick={() => handleMessage(friend.id)}
               >
-                <MessageCircle className='w-4 h-4 mr-2' />
+                <MessageCircle className="w-4 h-4 mr-2" />
                 Message
               </Button>
               <Button
-                variant='ghost'
-                size='sm'
-                className='text-destructive hover:text-destructive hover:bg-destructive/10'
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={() => {
                   if (confirm(`Remove ${friend.username} from friends?`)) {
-                    removeFriend.mutate(friend.id)
+                    removeFriend.mutate(friend.id);
                   }
                 }}
               >
-                <UserX className='w-4 h-4' />
+                <UserX className="w-4 h-4" />
               </Button>
             </div>
           </CardContent>
         </Card>
       ))}
     </div>
-  )
+  );
 }

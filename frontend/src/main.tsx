@@ -1,12 +1,12 @@
-import '@/styles/styles.css'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import React from 'react'
-import { createRoot } from 'react-dom/client'
-import App from './App'
-import { ApiError } from './api/client'
-import { ErrorBoundary } from './components/ErrorBoundary'
-import { ThemeProvider } from './components/theme-provider'
+import "@/styles/styles.css";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import { ApiError } from "./api/client";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ThemeProvider } from "./components/theme-provider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,9 +19,9 @@ const queryClient = new QueryClient({
           error.status >= 400 &&
           error.status < 500
         ) {
-          return false
+          return false;
         }
-        return failureCount < 3
+        return failureCount < 3;
       },
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
@@ -30,17 +30,17 @@ const queryClient = new QueryClient({
       retry: false, // Don't retry mutations by default
     },
   },
-})
+});
 
-const rootElement = document.getElementById('root')
-if (!rootElement) throw new Error('Failed to find the root element')
+const rootElement = document.getElementById("root");
+if (!rootElement) throw new Error("Failed to find the root element");
 
 createRoot(rootElement).render(
   <React.StrictMode>
     <ErrorBoundary>
       <ThemeProvider
-        attribute='class'
-        defaultTheme='dark'
+        attribute="class"
+        defaultTheme="dark"
         enableSystem={false}
         disableTransitionOnChange
       >
@@ -50,5 +50,5 @@ createRoot(rootElement).render(
         </QueryClientProvider>
       </ThemeProvider>
     </ErrorBoundary>
-  </React.StrictMode>
-)
+  </React.StrictMode>,
+);

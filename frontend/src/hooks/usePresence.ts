@@ -1,39 +1,39 @@
 // usePresence - Real-time online status tracking using zustand
 
-import { useEffect, useRef } from 'react'
-import { create } from 'zustand'
-import { createTicketedWS, getNextBackoff } from '@/lib/ws-utils'
+import { useEffect, useRef } from "react";
+import { create } from "zustand";
+import { createTicketedWS, getNextBackoff } from "@/lib/ws-utils";
 
 // Zustand store for global presence state
 interface PresenceState {
-  onlineUserIds: Set<number>
-  notifiedUserIds: Set<number>
-  setOnline: (userId: number) => void
-  setOffline: (userId: number) => void
-  setInitialOnlineUsers: (userIds: number[]) => void
-  markNotified: (userId: number) => void
-  reset: () => void
+  onlineUserIds: Set<number>;
+  notifiedUserIds: Set<number>;
+  setOnline: (userId: number) => void;
+  setOffline: (userId: number) => void;
+  setInitialOnlineUsers: (userIds: number[]) => void;
+  markNotified: (userId: number) => void;
+  reset: () => void;
 }
 
-export const usePresenceStore = create<PresenceState>(set => ({
+export const usePresenceStore = create<PresenceState>((set) => ({
   onlineUserIds: new Set<number>(),
   notifiedUserIds: new Set<number>(),
   setOnline: (userId: number) =>
-    set(state => {
-      const newSet = new Set(state.onlineUserIds)
-      newSet.add(userId)
-      return { onlineUserIds: newSet }
+    set((state) => {
+      const newSet = new Set(state.onlineUserIds);
+      newSet.add(userId);
+      return { onlineUserIds: newSet };
     }),
   setOffline: (userId: number) =>
-    set(state => {
-      const newOnlineSet = new Set(state.onlineUserIds)
-      newOnlineSet.delete(userId)
-      const newNotifiedSet = new Set(state.notifiedUserIds)
-      newNotifiedSet.delete(userId)
+    set((state) => {
+      const newOnlineSet = new Set(state.onlineUserIds);
+      newOnlineSet.delete(userId);
+      const newNotifiedSet = new Set(state.notifiedUserIds);
+      newNotifiedSet.delete(userId);
       return {
         onlineUserIds: newOnlineSet,
         notifiedUserIds: newNotifiedSet,
-      }
+      };
     }),
   setInitialOnlineUsers: (userIds: number[]) =>
     set(() => ({
@@ -41,75 +41,73 @@ export const usePresenceStore = create<PresenceState>(set => ({
       notifiedUserIds: new Set<number>(userIds),
     })),
   markNotified: (userId: number) =>
-    set(state => {
-      const newNotified = new Set(state.notifiedUserIds)
-      newNotified.add(userId)
-      return { notifiedUserIds: newNotified }
+    set((state) => {
+      const newNotified = new Set(state.notifiedUserIds);
+      newNotified.add(userId);
+      return { notifiedUserIds: newNotified };
     }),
   reset: () =>
     set(() => ({
       onlineUserIds: new Set<number>(),
       notifiedUserIds: new Set<number>(),
     })),
-}))
+}));
 
 // Types for presence events
 interface UserStatusPayload {
-  status: 'online' | 'offline'
-  user_id: number
+  status: "online" | "offline";
+  user_id: number;
 }
 
 interface ConnectedUsersPayload {
-  user_ids: number[]
+  user_ids: number[];
 }
 
 interface PresenceEvent {
-  type: string
-  user_id?: number
-  payload?: UserStatusPayload | ConnectedUsersPayload | Record<string, unknown>
+  type: string;
+  user_id?: number;
+  payload?: UserStatusPayload | ConnectedUsersPayload | Record<string, unknown>;
 }
 
 // Hook to listen for presence events via dedicated WebSocket
 export function usePresenceListener() {
-  const setOnline = usePresenceStore(state => state.setOnline)
-  const setOffline = usePresenceStore(state => state.setOffline)
-  const setInitialOnlineUsers = usePresenceStore(
-    state => state.setInitialOnlineUsers
-  )
-  const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimeoutRef = useRef<number | undefined>(undefined)
-  const reconnectAttemptsRef = useRef(0)
+  const setOnline = usePresenceStore((state) => state.setOnline);
+  const setOffline = usePresenceStore((state) => state.setOffline);
+  const setInitialOnlineUsers = usePresenceStore((state) => state.setInitialOnlineUsers);
+  const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<number | undefined>(undefined);
+  const reconnectAttemptsRef = useRef(0);
 
   useEffect(() => {
     const connect = () => {
       // Close existing connection
       if (wsRef.current) {
-        wsRef.current.close()
+        wsRef.current.close();
       }
 
       const connectWithTicket = async () => {
         try {
           const ws = await createTicketedWS({
-            path: '/api/ws/chat',
+            path: "/api/ws/chat",
             onOpen: () => {
-              reconnectAttemptsRef.current = 0
+              reconnectAttemptsRef.current = 0;
             },
-            onMessage: event => {
+            onMessage: (event) => {
               try {
-                const data: PresenceEvent = JSON.parse(event.data)
+                const data: PresenceEvent = JSON.parse(event.data);
 
-                if (data.type === 'connected_users') {
-                  const payload = data.payload as ConnectedUsersPayload
+                if (data.type === "connected_users") {
+                  const payload = data.payload as ConnectedUsersPayload;
                   if (payload && Array.isArray(payload.user_ids)) {
-                    setInitialOnlineUsers(payload.user_ids)
+                    setInitialOnlineUsers(payload.user_ids);
                   }
-                } else if (data.type === 'user_status') {
-                  const payload = data.payload as UserStatusPayload
+                } else if (data.type === "user_status") {
+                  const payload = data.payload as UserStatusPayload;
                   if (payload) {
-                    if (payload.status === 'online') {
-                      setOnline(payload.user_id)
-                    } else if (payload.status === 'offline') {
-                      setOffline(payload.user_id)
+                    if (payload.status === "online") {
+                      setOnline(payload.user_id);
+                    } else if (payload.status === "offline") {
+                      setOffline(payload.user_id);
                     }
                   }
                 }
@@ -118,39 +116,39 @@ export function usePresenceListener() {
               }
             },
             onClose: () => {
-              const delay = getNextBackoff(reconnectAttemptsRef.current++)
+              const delay = getNextBackoff(reconnectAttemptsRef.current++);
               reconnectTimeoutRef.current = window.setTimeout(() => {
-                connect()
-              }, delay)
+                connect();
+              }, delay);
             },
             onError: () => {
               // Error handling - connection will close and trigger reconnect
             },
-          })
+          });
 
-          wsRef.current = ws
+          wsRef.current = ws;
         } catch {
           // Failed to get ticket or connect - retry after delay
-          const delay = getNextBackoff(reconnectAttemptsRef.current++)
+          const delay = getNextBackoff(reconnectAttemptsRef.current++);
           reconnectTimeoutRef.current = window.setTimeout(() => {
-            connect()
-          }, delay)
+            connect();
+          }, delay);
         }
-      }
+      };
 
-      void connectWithTicket()
-    }
+      void connectWithTicket();
+    };
 
-    connect()
+    connect();
 
     return () => {
       if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current)
+        clearTimeout(reconnectTimeoutRef.current);
       }
       if (wsRef.current) {
-        wsRef.current.close()
-        wsRef.current = null
+        wsRef.current.close();
+        wsRef.current = null;
       }
-    }
-  }, [setOnline, setOffline, setInitialOnlineUsers])
+    };
+  }, [setOnline, setOffline, setInitialOnlineUsers]);
 }

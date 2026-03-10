@@ -1,36 +1,36 @@
-import type { Conversation } from '@/api/types'
-import { logger } from '@/lib/logger'
+import type { Conversation } from "@/api/types";
+import { logger } from "@/lib/logger";
 
 /** Consistent user colors for chat messages, keyed by userId */
 export const USER_COLORS = [
-  '#ff6b6b',
-  '#4ecdc4',
-  '#45b7d1',
-  '#f39c12',
-  '#9b59b6',
-  '#e74c3c',
-  '#3498db',
-] as const
+  "#ff6b6b",
+  "#4ecdc4",
+  "#45b7d1",
+  "#f39c12",
+  "#9b59b6",
+  "#e74c3c",
+  "#3498db",
+] as const;
 
 export function getUserColor(userId: number): string {
-  return USER_COLORS[userId % USER_COLORS.length]
+  return USER_COLORS[userId % USER_COLORS.length];
 }
 
 export function formatTimestamp(timestamp: string): string {
-  return new Date(timestamp).toLocaleTimeString('en-US', {
+  return new Date(timestamp).toLocaleTimeString("en-US", {
     hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export function getInitials(name: string): string {
-  return name.slice(0, 2).toUpperCase()
+  return name.slice(0, 2).toUpperCase();
 }
 
 /** Fallback avatar URL with consistent size */
 export function getAvatarUrl(seed: string | number, size = 150): string {
-  return `https://i.pravatar.cc/${size}?u=${seed}`
+  return `https://i.pravatar.cc/${size}?u=${seed}`;
 }
 
 /**
@@ -39,11 +39,11 @@ export function getAvatarUrl(seed: string | number, size = 150): string {
  */
 export function getDirectMessageName(
   conversation: Conversation,
-  currentUserId: number | undefined
+  currentUserId: number | undefined,
 ): string {
-  if (conversation.name) return conversation.name
-  const otherUser = conversation.participants?.find(p => p.id !== currentUserId)
-  return otherUser?.username || 'Unknown User'
+  if (conversation.name) return conversation.name;
+  const otherUser = conversation.participants?.find((p) => p.id !== currentUserId);
+  return otherUser?.username || "Unknown User";
 }
 
 /**
@@ -52,13 +52,10 @@ export function getDirectMessageName(
  */
 export function getDirectMessageAvatar(
   conversation: Conversation,
-  currentUserId: number | undefined
+  currentUserId: number | undefined,
 ): string {
-  const otherUser = conversation.participants?.find(p => p.id !== currentUserId)
-  return (
-    otherUser?.avatar ||
-    getAvatarUrl(otherUser?.username || conversation.id, 80)
-  )
+  const otherUser = conversation.participants?.find((p) => p.id !== currentUserId);
+  return otherUser?.avatar || getAvatarUrl(otherUser?.username || conversation.id, 80);
 }
 
 /**
@@ -67,43 +64,43 @@ export function getDirectMessageAvatar(
  */
 export function deduplicateDMConversations(
   conversations: Conversation[],
-  currentUserId: number | undefined
+  currentUserId: number | undefined,
 ): Conversation[] {
-  const direct = conversations.filter(c => !c.is_group)
-  const deduped: Conversation[] = []
-  const seenKeys = new Set<string>()
+  const direct = conversations.filter((c) => !c.is_group);
+  const deduped: Conversation[] = [];
+  const seenKeys = new Set<string>();
   for (const conv of direct) {
-    const other = conv.participants?.find(p => p.id !== currentUserId)
-    const key = other ? String(other.id) : `conv:${conv.id}`
-    if (seenKeys.has(key)) continue
-    seenKeys.add(key)
-    deduped.push(conv)
+    const other = conv.participants?.find((p) => p.id !== currentUserId);
+    const key = other ? String(other.id) : `conv:${conv.id}`;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    deduped.push(conv);
   }
-  return deduped
+  return deduped;
 }
 
 /** Build the WebSocket base URL from VITE_API_URL when absolute, else same-origin */
 export function getWsBaseUrl(): string {
   // Prefer explicit API host when configured with an absolute URL.
   // This keeps WS routing aligned with API routing in all environments.
-  const apiUrl = import.meta.env.VITE_API_URL
-  logger.debug('[ws] VITE_API_URL', apiUrl)
+  const apiUrl = import.meta.env.VITE_API_URL;
+  logger.debug("[ws] VITE_API_URL", apiUrl);
 
-  if (apiUrl?.startsWith('http')) {
-    const url = new URL(apiUrl)
-    const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsBaseUrl = `${protocol}//${url.host}`
-    logger.debug('[ws] Using explicit API host for WebSocket', wsBaseUrl)
-    return wsBaseUrl
+  if (apiUrl?.startsWith("http")) {
+    const url = new URL(apiUrl);
+    const protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    const wsBaseUrl = `${protocol}//${url.host}`;
+    logger.debug("[ws] Using explicit API host for WebSocket", wsBaseUrl);
+    return wsBaseUrl;
   }
 
   // Fallback to same-origin (supports relative /api and proxy-based setups)
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const host = window.location.host
-  const wsBaseUrl = `${protocol}//${host}`
-  logger.debug('[ws] Using same-origin for WebSocket (proxy mode)', {
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const host = window.location.host;
+  const wsBaseUrl = `${protocol}//${host}`;
+  logger.debug("[ws] Using same-origin for WebSocket (proxy mode)", {
     wsBaseUrl,
     host,
-  })
-  return wsBaseUrl
+  });
+  return wsBaseUrl;
 }

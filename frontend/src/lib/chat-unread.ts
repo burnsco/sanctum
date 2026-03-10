@@ -1,4 +1,4 @@
-import type { Message } from '@/api/types'
+import type { Message } from "@/api/types";
 
 /**
  * Count unread messages for a conversation.
@@ -9,17 +9,16 @@ import type { Message } from '@/api/types'
 export function countUnreadMessages(
   messages: Message[] | undefined,
   lastReadMessageId?: number | null,
-  currentUserId?: number | null
+  currentUserId?: number | null,
 ): number {
-  if (!Array.isArray(messages) || messages.length === 0) return 0
-  return messages.filter(m => {
-    if (typeof m.sender_id === 'number' && currentUserId === m.sender_id)
-      return false
-    if (typeof lastReadMessageId === 'number') {
-      return typeof m.id === 'number' && m.id > lastReadMessageId
+  if (!Array.isArray(messages) || messages.length === 0) return 0;
+  return messages.filter((m) => {
+    if (typeof m.sender_id === "number" && currentUserId === m.sender_id) return false;
+    if (typeof lastReadMessageId === "number") {
+      return typeof m.id === "number" && m.id > lastReadMessageId;
     }
-    return true
-  }).length
+    return true;
+  }).length;
 }
 
-export default countUnreadMessages
+export default countUnreadMessages;

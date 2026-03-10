@@ -1,32 +1,24 @@
-import { QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, renderHook, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest'
-import { apiClient } from '@/api/client'
+import { QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, renderHook, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { apiClient } from "@/api/client";
 import {
   clearCachedUser,
   getCurrentUser,
   useAllUsers,
   useUserProfile,
   useValidateToken,
-} from '@/hooks/useUsers'
-import { useAuthSessionStore } from '@/stores/useAuthSessionStore'
-import { createTestQueryClient } from '@/test/test-utils'
+} from "@/hooks/useUsers";
+import { useAuthSessionStore } from "@/stores/useAuthSessionStore";
+import { createTestQueryClient } from "@/test/test-utils";
 
-vi.mock('@/api/client', () => ({
+vi.mock("@/api/client", () => ({
   ApiError: class ApiError extends Error {
-    status?: number
+    status?: number;
     constructor(message: string, status?: number) {
-      super(message)
-      this.status = status
+      super(message);
+      this.status = status;
     }
   },
   apiClient: {
@@ -34,147 +26,147 @@ vi.mock('@/api/client', () => ({
     getUserProfile: vi.fn(),
     getCurrentUser: vi.fn(),
   },
-}))
+}));
 
 function createWrapper() {
-  const queryClient = createTestQueryClient()
+  const queryClient = createTestQueryClient();
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  )
-  return Wrapper
+  );
+  return Wrapper;
 }
 
-describe('useUsers hooks', () => {
+describe("useUsers hooks", () => {
   beforeAll(() => {
-    const store: Record<string, string> = {}
-    Object.defineProperty(globalThis, 'localStorage', {
+    const store: Record<string, string> = {};
+    Object.defineProperty(globalThis, "localStorage", {
       configurable: true,
       value: {
         getItem: (key: string) => store[key] ?? null,
         setItem: (key: string, value: string) => {
-          store[key] = value
+          store[key] = value;
         },
         removeItem: (key: string) => {
-          delete store[key]
+          delete store[key];
         },
         clear: () => {
-          for (const k of Object.keys(store)) delete store[k]
+          for (const k of Object.keys(store)) delete store[k];
         },
       },
-    })
-  })
+    });
+  });
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    useAuthSessionStore.getState().clear()
-    clearCachedUser()
-  })
+    vi.clearAllMocks();
+    useAuthSessionStore.getState().clear();
+    clearCachedUser();
+  });
 
   afterEach(() => {
-    cleanup()
-    localStorage.removeItem('user')
-    localStorage.removeItem('token')
-    useAuthSessionStore.getState().clear()
-    clearCachedUser()
-  })
+    cleanup();
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    useAuthSessionStore.getState().clear();
+    clearCachedUser();
+  });
 
-  describe('getCurrentUser', () => {
-    it('returns parsed user from localStorage', () => {
-      const user = { id: 1, username: 'u', email: 'u@x.com' }
-      localStorage.setItem('user', JSON.stringify(user))
-      expect(getCurrentUser()).toEqual(user)
-    })
+  describe("getCurrentUser", () => {
+    it("returns parsed user from localStorage", () => {
+      const user = { id: 1, username: "u", email: "u@x.com" };
+      localStorage.setItem("user", JSON.stringify(user));
+      expect(getCurrentUser()).toEqual(user);
+    });
 
-    it('returns updated user when localStorage changes between sessions', () => {
-      const userA = { id: 1, username: 'user-a', email: 'a@example.com' }
-      const userB = { id: 2, username: 'user-b', email: 'b@example.com' }
+    it("returns updated user when localStorage changes between sessions", () => {
+      const userA = { id: 1, username: "user-a", email: "a@example.com" };
+      const userB = { id: 2, username: "user-b", email: "b@example.com" };
 
-      localStorage.setItem('user', JSON.stringify(userA))
-      expect(getCurrentUser()).toEqual(userA)
+      localStorage.setItem("user", JSON.stringify(userA));
+      expect(getCurrentUser()).toEqual(userA);
 
-      localStorage.setItem('user', JSON.stringify(userB))
-      expect(getCurrentUser()).toEqual(userB)
-    })
+      localStorage.setItem("user", JSON.stringify(userB));
+      expect(getCurrentUser()).toEqual(userB);
+    });
 
-    it('returns null when no user in localStorage', () => {
-      expect(getCurrentUser()).toBeNull()
-    })
+    it("returns null when no user in localStorage", () => {
+      expect(getCurrentUser()).toBeNull();
+    });
 
-    it('returns null when localStorage has invalid JSON', () => {
-      localStorage.setItem('user', 'invalid')
-      expect(getCurrentUser()).toBeNull()
-    })
-  })
+    it("returns null when localStorage has invalid JSON", () => {
+      localStorage.setItem("user", "invalid");
+      expect(getCurrentUser()).toBeNull();
+    });
+  });
 
-  describe('useAllUsers', () => {
-    it('fetches users list', async () => {
+  describe("useAllUsers", () => {
+    it("fetches users list", async () => {
       const users = [
         {
           id: 1,
-          username: 'alice',
-          email: 'alice@example.com',
-          created_at: '',
-          updated_at: '',
+          username: "alice",
+          email: "alice@example.com",
+          created_at: "",
+          updated_at: "",
         },
-      ]
-      vi.mocked(apiClient).getUsers.mockResolvedValue(users as never)
+      ];
+      vi.mocked(apiClient).getUsers.mockResolvedValue(users as never);
 
       const { result } = renderHook(() => useAllUsers(), {
         wrapper: createWrapper(),
-      })
+      });
 
-      await waitFor(() => expect(result.current.isSuccess).toBe(true))
-      expect(result.current.data).toEqual(users)
-    })
-  })
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data).toEqual(users);
+    });
+  });
 
-  describe('useUserProfile', () => {
-    it('fetches user profile by id', async () => {
+  describe("useUserProfile", () => {
+    it("fetches user profile by id", async () => {
       const user = {
         id: 5,
-        username: 'bob',
-        email: 'bob@example.com',
-        created_at: '',
-        updated_at: '',
-      }
-      vi.mocked(apiClient).getUserProfile.mockResolvedValue(user as never)
+        username: "bob",
+        email: "bob@example.com",
+        created_at: "",
+        updated_at: "",
+      };
+      vi.mocked(apiClient).getUserProfile.mockResolvedValue(user as never);
 
       const { result } = renderHook(() => useUserProfile(5), {
         wrapper: createWrapper(),
-      })
+      });
 
-      await waitFor(() => expect(result.current.isSuccess).toBe(true))
-      expect(result.current.data).toEqual(user)
-      expect(vi.mocked(apiClient).getUserProfile).toHaveBeenCalledWith(5)
-    })
-  })
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data).toEqual(user);
+      expect(vi.mocked(apiClient).getUserProfile).toHaveBeenCalledWith(5);
+    });
+  });
 
-  describe('useValidateToken', () => {
-    it('returns true when authenticated endpoint succeeds', async () => {
-      useAuthSessionStore.getState().setAccessToken('some-token')
-      vi.mocked(apiClient).getCurrentUser.mockResolvedValue({} as never)
+  describe("useValidateToken", () => {
+    it("returns true when authenticated endpoint succeeds", async () => {
+      useAuthSessionStore.getState().setAccessToken("some-token");
+      vi.mocked(apiClient).getCurrentUser.mockResolvedValue({} as never);
 
       const { result } = renderHook(() => useValidateToken(), {
         wrapper: createWrapper(),
-      })
+      });
 
-      await waitFor(() => expect(result.current.isSuccess).toBe(true))
-      expect(result.current.data).toBe(true)
-      expect(vi.mocked(apiClient).getCurrentUser).toHaveBeenCalled()
-    })
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data).toBe(true);
+      expect(vi.mocked(apiClient).getCurrentUser).toHaveBeenCalled();
+    });
 
-    it('preserves session on request timeout', async () => {
-      useAuthSessionStore.getState().setAccessToken('some-token')
+    it("preserves session on request timeout", async () => {
+      useAuthSessionStore.getState().setAccessToken("some-token");
       vi.mocked(apiClient).getCurrentUser.mockRejectedValue(
-        new Error('Request timeout after 5000ms')
-      )
+        new Error("Request timeout after 5000ms"),
+      );
 
       const { result } = renderHook(() => useValidateToken(), {
         wrapper: createWrapper(),
-      })
+      });
 
-      await waitFor(() => expect(result.current.isSuccess).toBe(true))
-      expect(result.current.data).toBe(true)
-    })
-  })
-})
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data).toBe(true);
+    });
+  });
+});

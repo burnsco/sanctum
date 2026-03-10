@@ -35,8 +35,7 @@
   --sidebar-ring: oklch(0.52 0.19 222);
   --font-sans: "Manrope", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Iowan Old Style", "Book Antiqua", Palatino, serif;
-  --font-mono:
-    "JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace, monospace;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace, monospace;
   --radius: 0.72rem;
 }
 
@@ -74,8 +73,7 @@
   --sidebar-ring: oklch(0.72 0.16 221);
   --font-sans: "Manrope", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Iowan Old Style", "Book Antiqua", Palatino, serif;
-  --font-mono:
-    "JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace, monospace;
+  --font-mono: "JetBrains Mono", "Cascadia Code", "Fira Code", ui-monospace, monospace;
   --radius: 0.72rem;
 }
 
@@ -148,11 +146,7 @@
         color-mix(in oklch, var(--accent) 18%, transparent),
         transparent 62%
       ),
-      linear-gradient(
-        180deg,
-        color-mix(in oklch, var(--background) 97%, white),
-        var(--background)
-      );
+      linear-gradient(180deg, color-mix(in oklch, var(--background) 97%, white), var(--background));
     background-attachment: fixed;
     color: var(--foreground);
     text-rendering: optimizeLegibility;

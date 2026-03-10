@@ -1,8 +1,5 @@
-import type { User } from '@/api/types'
-import {
-  type ModerationActions,
-  UserMenuItems,
-} from '@/components/shared/UserMenuItems'
+import type { User } from "@/api/types";
+import { type ModerationActions, UserMenuItems } from "@/components/shared/UserMenuItems";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -10,30 +7,26 @@ import {
   ContextMenuLabel,
   ContextMenuSeparator,
   ContextMenuTrigger,
-} from '@/components/ui/context-menu'
-import { useUserActions } from '@/hooks/useUserActions'
+} from "@/components/ui/context-menu";
+import { useUserActions } from "@/hooks/useUserActions";
 
 interface UserContextMenuProps {
-  user: User
-  children: React.ReactNode
-  moderationActions?: ModerationActions
+  user: User;
+  children: React.ReactNode;
+  moderationActions?: ModerationActions;
 }
 
-export function UserContextMenu({
-  user,
-  children,
-  moderationActions,
-}: UserContextMenuProps) {
-  const actions = useUserActions(user)
+export function UserContextMenu({ user, children, moderationActions }: UserContextMenuProps) {
+  const actions = useUserActions(user);
 
   if (actions.isSelf) {
-    return <>{children}</>
+    return <>{children}</>;
   }
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent className='w-56'>
+      <ContextMenuContent className="w-56">
         <UserMenuItems
           user={user}
           actions={actions}
@@ -44,5 +37,5 @@ export function UserContextMenu({
         />
       </ContextMenuContent>
     </ContextMenu>
-  )
+  );
 }

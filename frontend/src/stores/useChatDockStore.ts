@@ -1,40 +1,40 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-const CHAT_DOCK_STORAGE_PREFIX = 'chat-dock-storage'
-const CHAT_DOCK_STORAGE_ANON = 'anon'
+const CHAT_DOCK_STORAGE_PREFIX = "chat-dock-storage";
+const CHAT_DOCK_STORAGE_ANON = "anon";
 
-type ChatDockStorageUserID = number | null | undefined
+type ChatDockStorageUserID = number | null | undefined;
 
 function normalizeUserID(userID: ChatDockStorageUserID): number | null {
-  return typeof userID === 'number' && Number.isFinite(userID) ? userID : null
+  return typeof userID === "number" && Number.isFinite(userID) ? userID : null;
 }
 
 export function getChatDockStorageKey(userID?: ChatDockStorageUserID): string {
-  const normalized = normalizeUserID(userID)
-  return `${CHAT_DOCK_STORAGE_PREFIX}:${normalized ?? CHAT_DOCK_STORAGE_ANON}`
+  const normalized = normalizeUserID(userID);
+  return `${CHAT_DOCK_STORAGE_PREFIX}:${normalized ?? CHAT_DOCK_STORAGE_ANON}`;
 }
 
 function getCurrentUserIDFromStorage(): number | null {
   try {
-    if (typeof window === 'undefined') return null
-    const userStr = localStorage.getItem('user')
-    if (!userStr) return null
-    const parsed = JSON.parse(userStr)
-    return normalizeUserID(parsed?.id)
+    if (typeof window === "undefined") return null;
+    const userStr = localStorage.getItem("user");
+    if (!userStr) return null;
+    const parsed = JSON.parse(userStr);
+    return normalizeUserID(parsed?.id);
   } catch {
-    return null
+    return null;
   }
 }
 
 export function getCurrentChatDockStorageKey(): string {
-  return getChatDockStorageKey(getCurrentUserIDFromStorage())
+  return getChatDockStorageKey(getCurrentUserIDFromStorage());
 }
 
 const DEFAULT_CHAT_DOCK_STATE = {
   isOpen: false,
   minimized: false,
-  view: 'list' as const,
+  view: "list" as const,
   activeConversationId: null as number | null,
   activePageConversationId: null as number | null,
   openConversationIds: [] as number[],
@@ -42,38 +42,38 @@ const DEFAULT_CHAT_DOCK_STATE = {
   unreadCounts: {} as Record<number, number>,
   scrollPositions: {} as Record<number, number>,
   dockPos: null as { x: number; y: number } | null,
-}
+};
 
 interface ChatDockState {
-  isOpen: boolean
-  minimized: boolean
-  view: 'list' | 'conversation'
-  activeConversationId: number | null
-  activePageConversationId: number | null
-  openConversationIds: number[]
-  drafts: Record<number, string>
-  unreadCounts: Record<number, number>
-  scrollPositions: Record<number, number>
-  dockPos: { x: number; y: number } | null
+  isOpen: boolean;
+  minimized: boolean;
+  view: "list" | "conversation";
+  activeConversationId: number | null;
+  activePageConversationId: number | null;
+  openConversationIds: number[];
+  drafts: Record<number, string>;
+  unreadCounts: Record<number, number>;
+  scrollPositions: Record<number, number>;
+  dockPos: { x: number; y: number } | null;
 
-  toggle: () => void
-  open: () => void
-  close: () => void
-  minimize: () => void
-  restore: () => void
-  setActiveConversation: (id: number | null) => void
-  setActivePageConversation: (id: number | null) => void
-  addOpenConversation: (id: number) => void
-  removeOpenConversation: (id: number) => void
-  clearOpenConversations: () => void
-  updateDraft: (conversationId: number, text: string) => void
-  clearDraft: (conversationId: number) => void
-  updateScrollPosition: (conversationId: number, position: number) => void
-  incrementUnread: (conversationId: number) => void
-  resetUnread: (conversationId: number) => void
-  resetUnreadBulk: (conversationIds: number[]) => void
-  setDockPos: (pos: { x: number; y: number } | null) => void
-  resetSessionState: () => void
+  toggle: () => void;
+  open: () => void;
+  close: () => void;
+  minimize: () => void;
+  restore: () => void;
+  setActiveConversation: (id: number | null) => void;
+  setActivePageConversation: (id: number | null) => void;
+  addOpenConversation: (id: number) => void;
+  removeOpenConversation: (id: number) => void;
+  clearOpenConversations: () => void;
+  updateDraft: (conversationId: number, text: string) => void;
+  clearDraft: (conversationId: number) => void;
+  updateScrollPosition: (conversationId: number, position: number) => void;
+  incrementUnread: (conversationId: number) => void;
+  resetUnread: (conversationId: number) => void;
+  resetUnreadBulk: (conversationIds: number[]) => void;
+  setDockPos: (pos: { x: number; y: number } | null) => void;
+  resetSessionState: () => void;
 }
 
 export const useChatDockStore = create<ChatDockState>()(
@@ -82,11 +82,11 @@ export const useChatDockStore = create<ChatDockState>()(
       ...DEFAULT_CHAT_DOCK_STATE,
 
       toggle: () => {
-        const { isOpen, minimized } = get()
+        const { isOpen, minimized } = get();
         if (isOpen && minimized) {
-          set({ minimized: false })
+          set({ minimized: false });
         } else {
-          set({ isOpen: !isOpen, minimized: false })
+          set({ isOpen: !isOpen, minimized: false });
         }
       },
 
@@ -98,73 +98,70 @@ export const useChatDockStore = create<ChatDockState>()(
 
       restore: () => set({ minimized: false }),
 
-      setActivePageConversation: (id: number | null) =>
-        set({ activePageConversationId: id }),
+      setActivePageConversation: (id: number | null) => set({ activePageConversationId: id }),
 
       setActiveConversation: (id: number | null) => {
         if (id === null) {
-          set({ activeConversationId: null, view: 'list' })
+          set({ activeConversationId: null, view: "list" });
         } else {
-          set(state => {
+          set((state) => {
             const openIds = state.openConversationIds.includes(id)
               ? state.openConversationIds
-              : [...state.openConversationIds, id]
+              : [...state.openConversationIds, id];
             return {
               activeConversationId: id,
               openConversationIds: openIds,
-              view: 'conversation',
+              view: "conversation",
               unreadCounts: { ...state.unreadCounts, [id]: 0 },
-            }
-          })
+            };
+          });
         }
       },
 
       addOpenConversation: (id: number) =>
-        set(state => ({
+        set((state) => ({
           openConversationIds: state.openConversationIds.includes(id)
             ? state.openConversationIds
             : [...state.openConversationIds, id],
         })),
 
       removeOpenConversation: (id: number) =>
-        set(state => {
-          const nextOpenIds = state.openConversationIds.filter(
-            openId => openId !== id
-          )
+        set((state) => {
+          const nextOpenIds = state.openConversationIds.filter((openId) => openId !== id);
           const nextActiveId =
             state.activeConversationId === id
               ? nextOpenIds.length > 0
                 ? nextOpenIds[nextOpenIds.length - 1]
                 : null
-              : state.activeConversationId
+              : state.activeConversationId;
 
           return {
             openConversationIds: nextOpenIds,
             activeConversationId: nextActiveId,
-            view: nextActiveId ? 'conversation' : 'list',
-          }
+            view: nextActiveId ? "conversation" : "list",
+          };
         }),
 
       clearOpenConversations: () =>
         set({
           openConversationIds: [],
           activeConversationId: null,
-          view: 'list',
+          view: "list",
         }),
 
       updateDraft: (conversationId: number, text: string) =>
-        set(state => ({
+        set((state) => ({
           drafts: { ...state.drafts, [conversationId]: text },
         })),
 
       clearDraft: (conversationId: number) =>
-        set(state => {
-          const { [conversationId]: _, ...rest } = state.drafts
-          return { drafts: rest }
+        set((state) => {
+          const { [conversationId]: _, ...rest } = state.drafts;
+          return { drafts: rest };
         }),
 
       updateScrollPosition: (conversationId: number, position: number) =>
-        set(state => ({
+        set((state) => ({
           scrollPositions: {
             ...state.scrollPositions,
             [conversationId]: position,
@@ -172,7 +169,7 @@ export const useChatDockStore = create<ChatDockState>()(
         })),
 
       incrementUnread: (conversationId: number) =>
-        set(state => ({
+        set((state) => ({
           unreadCounts: {
             ...state.unreadCounts,
             [conversationId]: (state.unreadCounts[conversationId] || 0) + 1,
@@ -180,27 +177,26 @@ export const useChatDockStore = create<ChatDockState>()(
         })),
 
       resetUnread: (conversationId: number) =>
-        set(state => ({
+        set((state) => ({
           unreadCounts: { ...state.unreadCounts, [conversationId]: 0 },
         })),
 
       resetUnreadBulk: (conversationIds: number[]) =>
-        set(state => {
-          const next = { ...state.unreadCounts }
+        set((state) => {
+          const next = { ...state.unreadCounts };
           for (const id of conversationIds) {
-            next[id] = 0
+            next[id] = 0;
           }
-          return { unreadCounts: next }
+          return { unreadCounts: next };
         }),
-      setDockPos: (pos: { x: number; y: number } | null) =>
-        set({ dockPos: pos }),
+      setDockPos: (pos: { x: number; y: number } | null) => set({ dockPos: pos }),
 
       resetSessionState: () => set({ ...DEFAULT_CHAT_DOCK_STATE }),
     }),
     {
       // Namespace persisted key by user id to avoid cross-account leaks.
       name: getCurrentChatDockStorageKey(),
-      partialize: state => ({
+      partialize: (state) => ({
         activeConversationId: state.activeConversationId,
         openConversationIds: state.openConversationIds,
         drafts: state.drafts,
@@ -208,34 +204,32 @@ export const useChatDockStore = create<ChatDockState>()(
         scrollPositions: state.scrollPositions,
         dockPos: state.dockPos,
       }),
-    }
-  )
-)
+    },
+  ),
+);
 
 interface ResetChatDockSessionOptions {
-  previousUserID?: ChatDockStorageUserID
-  nextUserID?: ChatDockStorageUserID
-  clearPersisted?: boolean
+  previousUserID?: ChatDockStorageUserID;
+  nextUserID?: ChatDockStorageUserID;
+  clearPersisted?: boolean;
 }
 
-export function resetChatDockSession(
-  options: ResetChatDockSessionOptions = {}
-) {
-  const previousUserID = normalizeUserID(options.previousUserID)
-  const nextUserID = normalizeUserID(options.nextUserID)
-  const clearPersisted = options.clearPersisted ?? true
+export function resetChatDockSession(options: ResetChatDockSessionOptions = {}) {
+  const previousUserID = normalizeUserID(options.previousUserID);
+  const nextUserID = normalizeUserID(options.nextUserID);
+  const clearPersisted = options.clearPersisted ?? true;
 
-  const previousKey = getChatDockStorageKey(previousUserID)
-  const nextKey = getChatDockStorageKey(nextUserID)
+  const previousKey = getChatDockStorageKey(previousUserID);
+  const nextKey = getChatDockStorageKey(nextUserID);
 
-  if (clearPersisted && typeof window !== 'undefined') {
-    localStorage.removeItem(previousKey)
+  if (clearPersisted && typeof window !== "undefined") {
+    localStorage.removeItem(previousKey);
     if (nextKey !== previousKey) {
-      localStorage.removeItem(nextKey)
+      localStorage.removeItem(nextKey);
     }
   }
 
-  useChatDockStore.persist.setOptions({ name: nextKey })
-  useChatDockStore.getState().resetSessionState()
-  void useChatDockStore.persist.rehydrate()
+  useChatDockStore.persist.setOptions({ name: nextKey });
+  useChatDockStore.getState().resetSessionState();
+  void useChatDockStore.persist.rehydrate();
 }

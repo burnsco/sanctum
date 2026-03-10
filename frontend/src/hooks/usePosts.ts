@@ -6,8 +6,8 @@ import {
   useQueries,
   useQuery,
   useQueryClient,
-} from '@tanstack/react-query'
-import { apiClient } from '../api/client'
+} from "@tanstack/react-query";
+import { apiClient } from "../api/client";
 import type {
   CreatePostRequest,
   PaginationParams,
@@ -15,34 +15,33 @@ import type {
   PostSort,
   SearchParams,
   UpdatePostRequest,
-} from '../api/types'
-import { handleAuthOrFKError } from '../lib/handleAuthOrFKError'
-import { handleModerationError } from '../lib/handleModerationError'
-import { useMySanctumMemberships } from './useSanctums'
+} from "../api/types";
+import { handleAuthOrFKError } from "../lib/handleAuthOrFKError";
+import { handleModerationError } from "../lib/handleModerationError";
+import { useMySanctumMemberships } from "./useSanctums";
 
 // Query keys
 export const postKeys = {
-  all: ['posts'] as const,
-  lists: () => [...postKeys.all, 'list'] as const,
+  all: ["posts"] as const,
+  lists: () => [...postKeys.all, "list"] as const,
   list: (params?: PaginationParams) => [...postKeys.lists(), params] as const,
-  details: () => [...postKeys.all, 'detail'] as const,
+  details: () => [...postKeys.all, "detail"] as const,
   detail: (id: number) => [...postKeys.details(), id] as const,
-  search: (params: SearchParams) =>
-    [...postKeys.all, 'search', params] as const,
-}
+  search: (params: SearchParams) => [...postKeys.all, "search", params] as const,
+};
 
 function parsePostTime(value: string | undefined): number {
-  if (!value) return 0
-  const ts = new Date(value).getTime()
-  return Number.isFinite(ts) ? ts : 0
+  if (!value) return 0;
+  const ts = new Date(value).getTime();
+  return Number.isFinite(ts) ? ts : 0;
 }
 
 export function sortPostsNewestFirst(posts: Post[]): Post[] {
   return [...posts].sort((a, b) => {
-    const byTime = parsePostTime(b.created_at) - parsePostTime(a.created_at)
-    if (byTime !== 0) return byTime
-    return b.id - a.id
-  })
+    const byTime = parsePostTime(b.created_at) - parsePostTime(a.created_at);
+    if (byTime !== 0) return byTime;
+    return b.id - a.id;
+  });
 }
 
 // Get all posts (paginated)
@@ -50,17 +49,13 @@ export function usePosts(params?: PaginationParams) {
   return useQuery({
     queryKey: postKeys.list(params),
     queryFn: () => apiClient.getPosts(params),
-  })
+  });
 }
 
 // Get all posts with infinite scroll
-export function useInfinitePosts(
-  limit = 10,
-  sanctumID?: number,
-  sort: PostSort = 'new'
-) {
+export function useInfinitePosts(limit = 10, sanctumID?: number, sort: PostSort = "new") {
   return useInfiniteQuery({
-    queryKey: ['posts', 'infinite', limit, sanctumID ?? 'all', sort],
+    queryKey: ["posts", "infinite", limit, sanctumID ?? "all", sort],
     queryFn: ({ pageParam = 0 }) =>
       apiClient.getPosts({
         offset: pageParam,
@@ -69,62 +64,57 @@ export function useInfinitePosts(
         sort,
       }),
     getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.length < limit) return undefined
-      return allPages.length * limit
+      if (lastPage.length < limit) return undefined;
+      return allPages.length * limit;
     },
     initialPageParam: 0,
-    refetchOnMount: 'always',
+    refetchOnMount: "always",
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-  })
+  });
 }
 
 // Client-side sort for the membership feed (merged from multiple sanctums)
 function sortPosts(posts: Post[], sort: PostSort): Post[] {
-  const now = Date.now()
+  const now = Date.now();
   switch (sort) {
-    case 'hot': {
+    case "hot": {
       const score = (p: Post) => {
-        const ageHours = (now - new Date(p.created_at).getTime()) / 3_600_000
-        const engagement = (p.likes_count ?? 0) + (p.comments_count ?? 0) * 2
-        return engagement / (ageHours + 2) ** 1.5
-      }
-      return [...posts].sort((a, b) => score(b) - score(a))
+        const ageHours = (now - new Date(p.created_at).getTime()) / 3_600_000;
+        const engagement = (p.likes_count ?? 0) + (p.comments_count ?? 0) * 2;
+        return engagement / (ageHours + 2) ** 1.5;
+      };
+      return [...posts].sort((a, b) => score(b) - score(a));
     }
-    case 'top':
+    case "top":
       return [...posts].sort(
         (a, b) =>
           (b.likes_count ?? 0) - (a.likes_count ?? 0) ||
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
-    case 'best':
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
+    case "best":
       return [...posts].sort(
         (a, b) =>
           (b.likes_count ?? 0) +
           (b.comments_count ?? 0) * 1.5 -
-          ((a.likes_count ?? 0) + (a.comments_count ?? 0) * 1.5)
-      )
+          ((a.likes_count ?? 0) + (a.comments_count ?? 0) * 1.5),
+      );
     default: // 'new'
       return [...posts].sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      )
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      );
   }
 }
 
-export function useMembershipFeedPosts(
-  limitPerSanctum = 10,
-  page = 1,
-  sort: PostSort = 'new'
-) {
-  const membershipsQuery = useMySanctumMemberships()
-  const sanctumIDs = (membershipsQuery.data ?? []).map(m => m.sanctum_id)
-  const cappedPage = Math.max(page, 1)
-  const fetchLimit = limitPerSanctum * cappedPage
+export function useMembershipFeedPosts(limitPerSanctum = 10, page = 1, sort: PostSort = "new") {
+  const membershipsQuery = useMySanctumMemberships();
+  const sanctumIDs = (membershipsQuery.data ?? []).map((m) => m.sanctum_id);
+  const cappedPage = Math.max(page, 1);
+  const fetchLimit = limitPerSanctum * cappedPage;
 
   const perSanctumQueries = useQueries({
-    queries: sanctumIDs.map(sanctumID => ({
-      queryKey: ['posts', 'membership-feed', sanctumID, fetchLimit, sort],
+    queries: sanctumIDs.map((sanctumID) => ({
+      queryKey: ["posts", "membership-feed", sanctumID, fetchLimit, sort],
       queryFn: () =>
         apiClient.getPosts({
           offset: 0,
@@ -135,34 +125,29 @@ export function useMembershipFeedPosts(
       staleTime: 60_000,
       enabled: membershipsQuery.isSuccess,
     })),
-  })
+  });
 
   const isLoading =
     membershipsQuery.isLoading ||
-    (membershipsQuery.isSuccess &&
-      perSanctumQueries.some(query => query.isLoading))
+    (membershipsQuery.isSuccess && perSanctumQueries.some((query) => query.isLoading));
   const isFetching =
-    membershipsQuery.isFetching ||
-    perSanctumQueries.some(query => query.isFetching)
-  const isError =
-    membershipsQuery.isError || perSanctumQueries.some(query => query.isError)
+    membershipsQuery.isFetching || perSanctumQueries.some((query) => query.isFetching);
+  const isError = membershipsQuery.isError || perSanctumQueries.some((query) => query.isError);
 
-  const seen = new Set<number>()
+  const seen = new Set<number>();
   const merged = perSanctumQueries
-    .flatMap(query => query.data ?? [])
-    .filter(post => {
+    .flatMap((query) => query.data ?? [])
+    .filter((post) => {
       if (!post.sanctum_id || seen.has(post.id)) {
-        return false
+        return false;
       }
-      seen.add(post.id)
-      return true
-    })
+      seen.add(post.id);
+      return true;
+    });
 
-  const mergedPosts = sortPosts(merged, sort)
+  const mergedPosts = sortPosts(merged, sort);
 
-  const hasMore = perSanctumQueries.some(
-    query => (query.data?.length ?? 0) >= fetchLimit
-  )
+  const hasMore = perSanctumQueries.some((query) => (query.data?.length ?? 0) >= fetchLimit);
 
   return {
     memberships: membershipsQuery.data ?? [],
@@ -171,7 +156,7 @@ export function useMembershipFeedPosts(
     isFetching,
     isError,
     hasMore,
-  }
+  };
 }
 
 // Get single post
@@ -180,7 +165,7 @@ export function usePost(id: number) {
     queryKey: postKeys.detail(id),
     queryFn: () => apiClient.getPost(id),
     enabled: !!id,
-  })
+  });
 }
 
 // Search posts
@@ -189,221 +174,209 @@ export function useSearchPosts(params: SearchParams) {
     queryKey: postKeys.search(params),
     queryFn: () => apiClient.searchPosts(params),
     enabled: !!params.q,
-  })
+  });
 }
 
 // Create post
 export function useCreatePost() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: CreatePostRequest) => apiClient.createPost(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: postKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: postKeys.lists() });
     },
-    onError: error => {
-      if (handleModerationError(error)) return
-      handleAuthOrFKError(error)
+    onError: (error) => {
+      if (handleModerationError(error)) return;
+      handleAuthOrFKError(error);
     },
-  })
+  });
 }
 
 // Update post
 export function useUpdatePost(postId: number) {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: UpdatePostRequest) => apiClient.updatePost(postId, data),
-    onMutate: async newData => {
+    onMutate: async (newData) => {
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: postKeys.detail(postId) })
+      await queryClient.cancelQueries({ queryKey: postKeys.detail(postId) });
 
       // Snapshot the previous value
-      const previousPost = queryClient.getQueryData<Post>(
-        postKeys.detail(postId)
-      )
+      const previousPost = queryClient.getQueryData<Post>(postKeys.detail(postId));
 
       // Optimistically update
       if (previousPost) {
         queryClient.setQueryData<Post>(postKeys.detail(postId), {
           ...previousPost,
           ...newData,
-        })
+        });
       }
 
-      return { previousPost }
+      return { previousPost };
     },
     onError: (error, _variables, context) => {
-      handleAuthOrFKError(error)
+      handleAuthOrFKError(error);
       if (context?.previousPost) {
-        queryClient.setQueryData(postKeys.detail(postId), context.previousPost)
+        queryClient.setQueryData(postKeys.detail(postId), context.previousPost);
       }
     },
     onSettled: () => {
       // Refetch after error or success
-      queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) })
+      queryClient.invalidateQueries({ queryKey: postKeys.detail(postId) });
     },
-  })
+  });
 }
 
 // Delete post
 export function useDeletePost() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (postId: number) => apiClient.deletePost(postId),
     onSuccess: (_data, postId) => {
       // Remove detail cache
-      queryClient.removeQueries({ queryKey: postKeys.detail(postId) })
+      queryClient.removeQueries({ queryKey: postKeys.detail(postId) });
       // Remove post from infinite list caches immediately
       const infiniteQueries = queryClient
         .getQueryCache()
-        .findAll({ queryKey: ['posts', 'infinite'] })
+        .findAll({ queryKey: ["posts", "infinite"] });
       for (const query of infiniteQueries) {
-        queryClient.setQueryData<
-          { pages: Post[][]; pageParams: unknown[] } | undefined
-        >(query.queryKey, old => {
-          if (!old) return old
-          return {
-            ...old,
-            pages: old.pages.map(page => page.filter(p => p.id !== postId)),
-          }
-        })
+        queryClient.setQueryData<{ pages: Post[][]; pageParams: unknown[] } | undefined>(
+          query.queryKey,
+          (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page) => page.filter((p) => p.id !== postId)),
+            };
+          },
+        );
       }
       // Invalidate paginated lists
-      queryClient.invalidateQueries({ queryKey: postKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: postKeys.lists() });
     },
-    onError: error => {
-      handleAuthOrFKError(error)
+    onError: (error) => {
+      handleAuthOrFKError(error);
     },
-  })
+  });
 }
 
 // Helper function to perform optimistic updates on both detail and list caches
 function updatePostInCache(
   queryClient: ReturnType<typeof useQueryClient>,
   postId: number,
-  updateFn: (oldPost: Post) => Post
+  updateFn: (oldPost: Post) => Post,
 ) {
   // Find all infinite posts queries
-  const infiniteQueries = queryClient
-    .getQueryCache()
-    .findAll({ queryKey: ['posts', 'infinite'] })
+  const infiniteQueries = queryClient.getQueryCache().findAll({ queryKey: ["posts", "infinite"] });
 
   // Update each infinite query cache
   for (const query of infiniteQueries) {
-    queryClient.setQueryData<
-      { pages: Post[][]; pageParams: unknown[] } | undefined
-    >(query.queryKey, oldData => {
-      if (!oldData) return oldData
-      return {
-        ...oldData,
-        pages: oldData.pages.map((page: Post[]) =>
-          page.map(post => (post.id === postId ? updateFn(post) : post))
-        ),
-      }
-    })
+    queryClient.setQueryData<{ pages: Post[][]; pageParams: unknown[] } | undefined>(
+      query.queryKey,
+      (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map((page: Post[]) =>
+            page.map((post) => (post.id === postId ? updateFn(post) : post)),
+          ),
+        };
+      },
+    );
   }
 
   // Also update the detail cache
-  queryClient.setQueryData<Post>(postKeys.detail(postId), oldPost =>
-    oldPost ? updateFn(oldPost) : undefined
-  )
+  queryClient.setQueryData<Post>(postKeys.detail(postId), (oldPost) =>
+    oldPost ? updateFn(oldPost) : undefined,
+  );
 }
 
 // Like/Toggle post (backend handles toggle logic)
 export function useLikePost() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (postId: number) => apiClient.likePost(postId),
-    onSuccess: updatedPost => {
+    onSuccess: (updatedPost) => {
       // Update cache with server response
-      updatePostInCache(queryClient, updatedPost.id, () => updatedPost)
+      updatePostInCache(queryClient, updatedPost.id, () => updatedPost);
 
       // Also update the detail cache if it exists
-      queryClient.setQueryData<Post>(
-        postKeys.detail(updatedPost.id),
-        () => updatedPost
-      )
+      queryClient.setQueryData<Post>(postKeys.detail(updatedPost.id), () => updatedPost);
     },
-    onError: error => {
-      handleAuthOrFKError(error)
+    onError: (error) => {
+      handleAuthOrFKError(error);
     },
-  })
+  });
 }
 
 // Vote on poll
 export function useVotePoll() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      postId,
-      pollOptionId,
-    }: {
-      postId: number
-      pollOptionId: number
-    }) => apiClient.votePoll(postId, pollOptionId),
-    onSuccess: updatedPost => {
-      updatePostInCache(queryClient, updatedPost.id, () => updatedPost)
-      queryClient.invalidateQueries({ queryKey: ['posts', 'infinite'] })
+    mutationFn: ({ postId, pollOptionId }: { postId: number; pollOptionId: number }) =>
+      apiClient.votePoll(postId, pollOptionId),
+    onSuccess: (updatedPost) => {
+      updatePostInCache(queryClient, updatedPost.id, () => updatedPost);
+      queryClient.invalidateQueries({ queryKey: ["posts", "infinite"] });
       queryClient.invalidateQueries({
         queryKey: postKeys.detail(updatedPost.id),
-      })
+      });
     },
-    onError: error => {
-      handleAuthOrFKError(error)
+    onError: (error) => {
+      handleAuthOrFKError(error);
     },
-  })
+  });
 }
 
 // Unlike post
 export function useUnlikePost() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (postId: number) => apiClient.unlikePost(postId),
     onMutate: async (postId: number) => {
-      await queryClient.cancelQueries({ queryKey: postKeys.all })
+      await queryClient.cancelQueries({ queryKey: postKeys.all });
 
-      const previousPost = queryClient.getQueryData<Post>(
-        postKeys.detail(postId)
-      )
+      const previousPost = queryClient.getQueryData<Post>(postKeys.detail(postId));
       const infiniteQueries = queryClient
         .getQueryCache()
-        .findAll({ queryKey: ['posts', 'infinite'] })
-      const previousInfinitePostsData = infiniteQueries.map(q => ({
+        .findAll({ queryKey: ["posts", "infinite"] });
+      const previousInfinitePostsData = infiniteQueries.map((q) => ({
         queryKey: q.queryKey,
         data: queryClient.getQueryData(q.queryKey),
-      }))
+      }));
 
       // Optimistically update
-      updatePostInCache(queryClient, postId, oldPost => ({
+      updatePostInCache(queryClient, postId, (oldPost) => ({
         ...oldPost,
         likes_count: Math.max((oldPost.likes_count ?? 0) - 1, 0),
         liked: false,
-      }))
+      }));
 
-      return { previousPost, previousInfinitePostsData }
+      return { previousPost, previousInfinitePostsData };
     },
-    onSuccess: updatedPost => {
+    onSuccess: (updatedPost) => {
       // Use the returned post to update cache
-      updatePostInCache(queryClient, updatedPost.id, () => updatedPost)
+      updatePostInCache(queryClient, updatedPost.id, () => updatedPost);
     },
     onError: (error, postId, context) => {
-      handleAuthOrFKError(error)
+      handleAuthOrFKError(error);
       if (context?.previousPost) {
-        queryClient.setQueryData(postKeys.detail(postId), context.previousPost)
+        queryClient.setQueryData(postKeys.detail(postId), context.previousPost);
       }
-      context?.previousInfinitePostsData?.forEach(query => {
+      context?.previousInfinitePostsData?.forEach((query) => {
         if (query.data) {
-          queryClient.setQueryData(query.queryKey, query.data)
+          queryClient.setQueryData(query.queryKey, query.data);
         }
-      })
+      });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: postKeys.all })
+      queryClient.invalidateQueries({ queryKey: postKeys.all });
     },
-  })
+  });
 }

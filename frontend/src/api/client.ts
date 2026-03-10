@@ -1,6 +1,6 @@
-import { fetchWithTimeout } from '../lib/fetch-utils'
-import { logger } from '../lib/logger'
-import { useAuthSessionStore } from '../stores/useAuthSessionStore'
+import { fetchWithTimeout } from "../lib/fetch-utils";
+import { logger } from "../lib/logger";
+import { useAuthSessionStore } from "../stores/useAuthSessionStore";
 import type {
   AdminBanRequest,
   AdminDeletedComment,
@@ -47,7 +47,7 @@ import type {
   UploadedImage,
   User,
   UserBlock,
-} from './types'
+} from "./types";
 
 // Add a custom error type that includes request ID
 export class ApiError extends Error {
@@ -57,75 +57,72 @@ export class ApiError extends Error {
     public code?: string,
     public requestId?: string,
     public strikes?: number,
-    public isBanned?: boolean
+    public isBanned?: boolean,
   ) {
-    super(message)
-    this.name = 'ApiError'
+    super(message);
+    this.name = "ApiError";
   }
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 class ApiClient {
-  private baseUrl: string
-  private refreshPromise: Promise<string | null> | null = null
+  private baseUrl: string;
+  private refreshPromise: Promise<string | null> | null = null;
 
   constructor(baseUrl: string) {
-    this.baseUrl = baseUrl
+    this.baseUrl = baseUrl;
   }
 
   private getAuthToken(): string | null {
-    return useAuthSessionStore.getState().accessToken
+    return useAuthSessionStore.getState().accessToken;
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     // Ensure we pass an absolute URL to `fetch`. When `VITE_API_URL` is a
     // relative path (e.g. '/api') some runtimes (node fetch) require an
     // absolute URL. Prefer `baseUrl` when absolute, otherwise build from
     // `window.location.origin` so tests and SSR-like environments work.
-    const url = this.baseUrl?.startsWith('http')
+    const url = this.baseUrl?.startsWith("http")
       ? `${this.baseUrl}${endpoint}`
-      : typeof window !== 'undefined' && window.location?.origin
+      : typeof window !== "undefined" && window.location?.origin
         ? `${window.location.origin}${this.baseUrl}${endpoint}`
-        : `${this.baseUrl}${endpoint}`
-    const token = this.getAuthToken()
-    const method = options.method || 'GET'
-    const isFormDataBody = options.body instanceof FormData
+        : `${this.baseUrl}${endpoint}`;
+    const token = this.getAuthToken();
+    const method = options.method || "GET";
+    const isFormDataBody = options.body instanceof FormData;
 
-    const startTime = Date.now()
-    logger.debug(`API Request: ${method} ${endpoint}`)
+    const startTime = Date.now();
+    logger.debug(`API Request: ${method} ${endpoint}`);
 
-    const headers: Record<string, string> = {}
+    const headers: Record<string, string> = {};
     if (!isFormDataBody) {
-      headers['Content-Type'] = 'application/json'
+      headers["Content-Type"] = "application/json";
     }
 
     if (options.headers) {
-      const existingHeaders = new Headers(options.headers)
+      const existingHeaders = new Headers(options.headers);
       existingHeaders.forEach((value, key) => {
-        headers[key] = value
-      })
+        headers[key] = value;
+      });
     }
 
     if (token && !headers.Authorization) {
-      headers.Authorization = `Bearer ${token}`
+      headers.Authorization = `Bearer ${token}`;
     }
     if (isFormDataBody) {
       // Let the browser set multipart boundaries automatically.
-      delete headers['Content-Type']
+      delete headers["Content-Type"];
     }
 
     // Use shorter timeout for critical auth endpoints
     const isCriticalAuthEndpoint =
-      endpoint === '/users/me' ||
-      endpoint === '/ws/ticket' ||
-      endpoint === '/auth/login' ||
-      endpoint === '/auth/signup' ||
-      endpoint === '/auth/refresh'
-    const timeout = isCriticalAuthEndpoint ? 5000 : 10000
+      endpoint === "/users/me" ||
+      endpoint === "/ws/ticket" ||
+      endpoint === "/auth/login" ||
+      endpoint === "/auth/signup" ||
+      endpoint === "/auth/refresh";
+    const timeout = isCriticalAuthEndpoint ? 5000 : 10000;
 
     try {
       const response = await fetchWithTimeout(
@@ -133,18 +130,16 @@ class ApiClient {
         {
           ...options,
           headers,
-          credentials: 'include',
+          credentials: "include",
         },
-        timeout
-      )
+        timeout,
+      );
 
-      const duration = Date.now() - startTime
-      logger.debug(
-        `API Request completed in ${duration}ms: ${method} ${endpoint}`
-      )
+      const duration = Date.now() - startTime;
+      logger.debug(`API Request completed in ${duration}ms: ${method} ${endpoint}`);
 
-      const text = await response.text()
-      const requestId = response.headers.get('X-Request-ID') || undefined
+      const text = await response.text();
+      const requestId = response.headers.get("X-Request-ID") || undefined;
 
       if (!response.ok) {
         // Handle token refresh on 401
@@ -152,848 +147,753 @@ class ApiClient {
         // excluding auth endpoints.
         if (
           response.status === 401 &&
-          endpoint !== '/auth/login' &&
-          endpoint !== '/auth/signup' &&
-          endpoint !== '/auth/refresh' &&
-          endpoint !== '/auth/logout'
+          endpoint !== "/auth/login" &&
+          endpoint !== "/auth/signup" &&
+          endpoint !== "/auth/refresh" &&
+          endpoint !== "/auth/logout"
         ) {
-          logger.info('Access token missing or expired, attempting refresh...')
+          logger.info("Access token missing or expired, attempting refresh...");
 
           try {
-            const newToken = await this.performRefresh()
+            const newToken = await this.performRefresh();
             if (newToken) {
-              logger.info('Token refreshed successfully, retrying request')
+              logger.info("Token refreshed successfully, retrying request");
               // Retry with new token
-              return this.request(endpoint, options)
+              return this.request(endpoint, options);
             }
           } catch (refreshErr) {
-            logger.error('Token refresh failed', { error: refreshErr })
+            logger.error("Token refresh failed", { error: refreshErr });
           }
 
           // If refresh fails, clear auth state and let React handle the redirect
           // via ProtectedRoute. For /ws/ticket we keep auth state intact so
           // transient realtime failures don't hard-logout the whole app.
-          if (endpoint !== '/ws/ticket') {
-            useAuthSessionStore.getState().clear()
-            localStorage.removeItem('user')
+          if (endpoint !== "/ws/ticket") {
+            useAuthSessionStore.getState().clear();
+            localStorage.removeItem("user");
           }
         }
 
-        let errMsg = `HTTP ${response.status}: ${response.statusText}`
-        let code: string | undefined
-        let strikes: number | undefined
-        let isBanned: boolean | undefined
+        let errMsg = `HTTP ${response.status}: ${response.statusText}`;
+        let code: string | undefined;
+        let strikes: number | undefined;
+        let isBanned: boolean | undefined;
 
         try {
-          const parsed = text ? JSON.parse(text) : null
-          if (parsed && typeof parsed === 'object') {
-            if (parsed.error) errMsg = parsed.error
-            if (parsed.code) code = parsed.code
-            if (typeof parsed.strikes === 'number') strikes = parsed.strikes
-            if (typeof parsed.is_banned === 'boolean')
-              isBanned = parsed.is_banned
+          const parsed = text ? JSON.parse(text) : null;
+          if (parsed && typeof parsed === "object") {
+            if (parsed.error) errMsg = parsed.error;
+            if (parsed.code) code = parsed.code;
+            if (typeof parsed.strikes === "number") strikes = parsed.strikes;
+            if (typeof parsed.is_banned === "boolean") isBanned = parsed.is_banned;
           }
         } catch (_) {
-          if (text) errMsg = text
+          if (text) errMsg = text;
         }
 
         logger.error(`API Error: ${method} ${endpoint}`, {
           status: response.status,
           message: errMsg,
           requestId,
-        })
+        });
 
-        throw new ApiError(
-          errMsg,
-          response.status,
-          code,
-          requestId,
-          strikes,
-          isBanned
-        )
+        throw new ApiError(errMsg, response.status, code, requestId, strikes, isBanned);
       }
 
-      logger.debug(`API Success: ${method} ${endpoint}`)
+      logger.debug(`API Success: ${method} ${endpoint}`);
 
       if (!text) {
-        return undefined as unknown as T
+        return undefined as unknown as T;
       }
 
       try {
-        return JSON.parse(text) as T
+        return JSON.parse(text) as T;
       } catch (_) {
-        return text as unknown as T
+        return text as unknown as T;
       }
     } catch (error) {
-      if (error instanceof ApiError) throw error
+      if (error instanceof ApiError) throw error;
 
-      const msg = error instanceof Error ? error.message : String(error)
-      const isTimeout = msg.includes('Request timeout')
+      const msg = error instanceof Error ? error.message : String(error);
+      const isTimeout = msg.includes("Request timeout");
 
       logger.error(`API Network/Unexpected Error: ${method} ${endpoint}`, {
         error: msg,
         isTimeout,
-      })
+      });
 
       if (isTimeout) {
-        throw new Error(`Request timeout: ${endpoint}`)
+        throw new Error(`Request timeout: ${endpoint}`);
       }
-      throw new Error(`Connection failed: ${msg}`)
+      throw new Error(`Connection failed: ${msg}`);
     }
   }
 
   private async performRefresh(): Promise<string | null> {
     if (this.refreshPromise) {
-      return this.refreshPromise
+      return this.refreshPromise;
     }
 
     this.refreshPromise = (async () => {
       try {
-        const refreshUrl = this.baseUrl?.startsWith('http')
+        const refreshUrl = this.baseUrl?.startsWith("http")
           ? `${this.baseUrl}/auth/refresh`
-          : typeof window !== 'undefined' && window.location?.origin
+          : typeof window !== "undefined" && window.location?.origin
             ? `${window.location.origin}${this.baseUrl}/auth/refresh`
-            : `${this.baseUrl}/auth/refresh`
+            : `${this.baseUrl}/auth/refresh`;
 
         const refreshResponse = await fetchWithTimeout(
           refreshUrl,
           {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
           },
-          5000 // 5s timeout for refresh
-        )
+          5000, // 5s timeout for refresh
+        );
 
         if (refreshResponse.ok) {
-          const data = await refreshResponse.json()
+          const data = await refreshResponse.json();
           if (data.token) {
-            useAuthSessionStore.getState().setAccessToken(data.token)
-            return data.token
+            useAuthSessionStore.getState().setAccessToken(data.token);
+            return data.token;
           }
         }
-        return null
+        return null;
       } catch (err) {
-        logger.error('Refresh call failed', { error: err })
-        return null
+        logger.error("Refresh call failed", { error: err });
+        return null;
       } finally {
-        this.refreshPromise = null
+        this.refreshPromise = null;
       }
-    })()
+    })();
 
-    return this.refreshPromise
+    return this.refreshPromise;
   }
 
   // Health
   async healthCheck(): Promise<{ message: string }> {
-    return this.request('/')
+    return this.request("/");
   }
 
   // Auth
   async signup(data: SignupRequest): Promise<AuthResponse> {
-    const resp = await this.request<AuthResponse>('/auth/signup', {
-      method: 'POST',
+    const resp = await this.request<AuthResponse>("/auth/signup", {
+      method: "POST",
       body: JSON.stringify(data),
-    })
+    });
     if (resp.token) {
-      useAuthSessionStore.getState().setAccessToken(resp.token)
+      useAuthSessionStore.getState().setAccessToken(resp.token);
     }
-    return resp
+    return resp;
   }
 
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const resp = await this.request<AuthResponse>('/auth/login', {
-      method: 'POST',
+    const resp = await this.request<AuthResponse>("/auth/login", {
+      method: "POST",
       body: JSON.stringify(data),
-    })
+    });
     if (resp.token) {
-      useAuthSessionStore.getState().setAccessToken(resp.token)
+      useAuthSessionStore.getState().setAccessToken(resp.token);
     }
-    return resp
+    return resp;
   }
 
   async logout(): Promise<void> {
     try {
-      await this.request('/auth/logout', {
-        method: 'POST',
+      await this.request("/auth/logout", {
+        method: "POST",
         body: JSON.stringify({}),
-      })
+      });
     } catch (err) {
-      logger.error('Logout request failed', { error: err })
+      logger.error("Logout request failed", { error: err });
     } finally {
-      useAuthSessionStore.getState().clear()
-      localStorage.removeItem('user')
+      useAuthSessionStore.getState().clear();
+      localStorage.removeItem("user");
     }
   }
 
   async refresh(): Promise<{ token: string }> {
-    const resp = await this.request<{ token: string }>('/auth/refresh', {
-      method: 'POST',
-    })
+    const resp = await this.request<{ token: string }>("/auth/refresh", {
+      method: "POST",
+    });
     if (resp.token) {
-      useAuthSessionStore.getState().setAccessToken(resp.token)
+      useAuthSessionStore.getState().setAccessToken(resp.token);
     }
-    return resp
+    return resp;
   }
 
   // Posts
   async getPosts(params?: PaginationParams): Promise<Post[]> {
-    const query = new URLSearchParams()
-    if (params?.offset !== undefined)
-      query.set('offset', params.offset.toString())
-    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
-    if (params?.sanctum_id !== undefined)
-      query.set('sanctum_id', params.sanctum_id.toString())
-    if (params?.sort) query.set('sort', params.sort)
-    const queryString = query.toString() ? `?${query.toString()}` : ''
-    return this.request(`/posts${queryString}`)
+    const query = new URLSearchParams();
+    if (params?.offset !== undefined) query.set("offset", params.offset.toString());
+    if (params?.limit !== undefined) query.set("limit", params.limit.toString());
+    if (params?.sanctum_id !== undefined) query.set("sanctum_id", params.sanctum_id.toString());
+    if (params?.sort) query.set("sort", params.sort);
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    return this.request(`/posts${queryString}`);
   }
 
   async getPost(id: number): Promise<Post> {
-    return this.request(`/posts/${id}`)
+    return this.request(`/posts/${id}`);
   }
 
   async createPost(data: CreatePostRequest): Promise<Post> {
-    return this.request('/posts', {
-      method: 'POST',
+    return this.request("/posts", {
+      method: "POST",
       body: JSON.stringify(data),
-    })
+    });
   }
 
   async uploadImage(file: File): Promise<UploadedImage> {
-    const formData = new FormData()
-    formData.append('image', file)
-    return this.request('/images/upload', {
-      method: 'POST',
+    const formData = new FormData();
+    formData.append("image", file);
+    return this.request("/images/upload", {
+      method: "POST",
       body: formData,
-    })
+    });
   }
 
   async updatePost(id: number, data: UpdatePostRequest): Promise<Post> {
     return this.request(`/posts/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
-    })
+    });
   }
 
   async votePoll(postId: number, pollOptionId: number): Promise<Post> {
     return this.request(`/posts/${postId}/poll/vote`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ poll_option_id: pollOptionId }),
-    })
+    });
   }
 
   async deletePost(id: number): Promise<{ message: string }> {
     return this.request(`/posts/${id}`, {
-      method: 'DELETE',
-    })
+      method: "DELETE",
+    });
   }
 
   async likePost(id: number): Promise<Post> {
     return this.request(`/posts/${id}/like`, {
-      method: 'POST',
-    })
+      method: "POST",
+    });
   }
 
   async unlikePost(id: number): Promise<Post> {
     return this.request(`/posts/${id}/like`, {
-      method: 'DELETE',
-    })
+      method: "DELETE",
+    });
   }
 
   async reportPost(id: number, data: ReportRequest): Promise<ModerationReport> {
     return this.request(`/posts/${id}/report`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
-    })
+    });
   }
 
   async searchPosts(params: SearchParams): Promise<Post[]> {
-    const query = new URLSearchParams()
-    query.set('q', params.q)
-    if (params.offset !== undefined)
-      query.set('offset', params.offset.toString())
-    if (params.limit !== undefined) query.set('limit', params.limit.toString())
-    return this.request(`/posts/search?${query.toString()}`)
+    const query = new URLSearchParams();
+    query.set("q", params.q);
+    if (params.offset !== undefined) query.set("offset", params.offset.toString());
+    if (params.limit !== undefined) query.set("limit", params.limit.toString());
+    return this.request(`/posts/search?${query.toString()}`);
   }
 
   // Comments
   async getPostComments(postId: number): Promise<Comment[]> {
-    return this.request(`/posts/${postId}/comments`)
+    return this.request(`/posts/${postId}/comments`);
   }
 
-  async createComment(
-    postId: number,
-    data: CreateCommentRequest
-  ): Promise<Comment> {
+  async createComment(postId: number, data: CreateCommentRequest): Promise<Comment> {
     return this.request(`/posts/${postId}/comments`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
-    })
+    });
   }
 
   async updateComment(
     postId: number,
     commentId: number,
-    data: UpdateCommentRequest
+    data: UpdateCommentRequest,
   ): Promise<Comment> {
     return this.request(`/posts/${postId}/comments/${commentId}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
-    })
+    });
   }
 
-  async deleteComment(
-    postId: number,
-    commentId: number
-  ): Promise<{ message: string }> {
+  async deleteComment(postId: number, commentId: number): Promise<{ message: string }> {
     return this.request(`/posts/${postId}/comments/${commentId}`, {
-      method: 'DELETE',
-    })
+      method: "DELETE",
+    });
   }
 
   // Users
   async searchUsers(q: string, limit = 20): Promise<User[]> {
-    const query = new URLSearchParams({ q, limit: limit.toString() })
-    return this.request(`/users/search?${query.toString()}`)
+    const query = new URLSearchParams({ q, limit: limit.toString() });
+    return this.request(`/users/search?${query.toString()}`);
   }
 
   async getUsers(params?: PaginationParams): Promise<User[]> {
-    const query = new URLSearchParams()
-    if (params?.offset !== undefined)
-      query.set('offset', params.offset.toString())
-    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
-    const queryString = query.toString() ? `?${query.toString()}` : ''
-    return this.request(`/users${queryString}`)
+    const query = new URLSearchParams();
+    if (params?.offset !== undefined) query.set("offset", params.offset.toString());
+    if (params?.limit !== undefined) query.set("limit", params.limit.toString());
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    return this.request(`/users${queryString}`);
   }
 
   async getFriends(params?: PaginationParams): Promise<User[]> {
-    const query = new URLSearchParams()
-    if (params?.offset !== undefined)
-      query.set('offset', params.offset.toString())
-    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
-    const queryString = query.toString() ? `?${query.toString()}` : ''
-    return this.request(`/friends${queryString}`)
+    const query = new URLSearchParams();
+    if (params?.offset !== undefined) query.set("offset", params.offset.toString());
+    if (params?.limit !== undefined) query.set("limit", params.limit.toString());
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    return this.request(`/friends${queryString}`);
   }
 
-  async sendFriendRequest(
-    userId: number
-  ): Promise<{ message: string; request_id: number }> {
+  async sendFriendRequest(userId: number): Promise<{ message: string; request_id: number }> {
     return this.request(`/friends/requests/${userId}`, {
-      method: 'POST',
-    })
+      method: "POST",
+    });
   }
 
   async getPendingRequests(): Promise<FriendRequest[]> {
-    return this.request('/friends/requests')
+    return this.request("/friends/requests");
   }
 
   async getSentRequests(): Promise<FriendRequest[]> {
-    return this.request('/friends/requests/sent')
+    return this.request("/friends/requests/sent");
   }
 
   async acceptFriendRequest(requestId: number): Promise<{ message: string }> {
     return this.request(`/friends/requests/${requestId}/accept`, {
-      method: 'POST',
-    })
+      method: "POST",
+    });
   }
 
   async rejectFriendRequest(requestId: number): Promise<{ message: string }> {
     return this.request(`/friends/requests/${requestId}/reject`, {
-      method: 'POST',
-    })
+      method: "POST",
+    });
   }
 
   async getFriendshipStatus(userId: number): Promise<FriendshipStatus> {
-    return this.request(`/friends/status/${userId}`)
+    return this.request(`/friends/status/${userId}`);
   }
 
   async removeFriend(userId: number): Promise<{ message: string }> {
     return this.request(`/friends/${userId}`, {
-      method: 'DELETE',
-    })
+      method: "DELETE",
+    });
   }
 
   async getMyProfile(): Promise<User> {
-    return this.request('/users/me')
+    return this.request("/users/me");
   }
 
   async getUserProfile(id: number): Promise<User> {
-    return this.request(`/users/${id}`)
+    return this.request(`/users/${id}`);
   }
 
   async updateMyProfile(data: UpdateProfileRequest): Promise<User> {
-    return this.request('/users/me', {
-      method: 'PUT',
+    return this.request("/users/me", {
+      method: "PUT",
       body: JSON.stringify(data),
-    })
+    });
   }
 
   async getMyMentions(params?: PaginationParams): Promise<MessageMention[]> {
-    const query = new URLSearchParams()
-    if (params?.offset !== undefined)
-      query.set('offset', params.offset.toString())
-    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
-    const queryString = query.toString() ? `?${query.toString()}` : ''
-    return this.request(`/users/me/mentions${queryString}`)
+    const query = new URLSearchParams();
+    if (params?.offset !== undefined) query.set("offset", params.offset.toString());
+    if (params?.limit !== undefined) query.set("limit", params.limit.toString());
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    return this.request(`/users/me/mentions${queryString}`);
   }
 
   async getMyBlocks(): Promise<UserBlock[]> {
-    return this.request('/users/blocks/me')
+    return this.request("/users/blocks/me");
   }
 
   async blockUser(userId: number): Promise<{ message: string }> {
     return this.request(`/users/${userId}/block`, {
-      method: 'POST',
-    })
+      method: "POST",
+    });
   }
 
   async unblockUser(userId: number): Promise<{ message: string }> {
     return this.request(`/users/${userId}/block`, {
-      method: 'DELETE',
-    })
+      method: "DELETE",
+    });
   }
 
-  async reportUser(
-    userId: number,
-    data: ReportRequest
-  ): Promise<ModerationReport> {
+  async reportUser(userId: number, data: ReportRequest): Promise<ModerationReport> {
     return this.request(`/users/${userId}/report`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
-    })
+    });
   }
 
   // Chat - Conversations
   async getConversations(): Promise<Conversation[]> {
-    return this.request('/conversations')
+    return this.request("/conversations");
   }
 
   async getConversation(id: number): Promise<Conversation> {
-    return this.request(`/conversations/${id}`)
+    return this.request(`/conversations/${id}`);
   }
 
-  async createConversation(
-    data: CreateConversationRequest
-  ): Promise<Conversation> {
-    return this.request('/conversations', {
-      method: 'POST',
+  async createConversation(data: CreateConversationRequest): Promise<Conversation> {
+    return this.request("/conversations", {
+      method: "POST",
       body: JSON.stringify(data),
-    })
+    });
   }
 
   async leaveConversation(id: number): Promise<{ message: string }> {
     return this.request(`/conversations/${id}`, {
-      method: 'DELETE',
-    })
+      method: "DELETE",
+    });
   }
 
   async markConversationAsRead(id: number): Promise<{ message: string }> {
     return this.request(`/conversations/${id}/read`, {
-      method: 'POST',
-    })
+      method: "POST",
+    });
   }
 
   // Chat - Messages
-  async getMessages(
-    conversationId: number,
-    params?: PaginationParams
-  ): Promise<Message[]> {
-    const query = new URLSearchParams()
-    if (params?.offset !== undefined)
-      query.set('offset', params.offset.toString())
-    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
-    const queryString = query.toString() ? `?${query.toString()}` : ''
-    return this.request(
-      `/conversations/${conversationId}/messages${queryString}`
-    )
+  async getMessages(conversationId: number, params?: PaginationParams): Promise<Message[]> {
+    const query = new URLSearchParams();
+    if (params?.offset !== undefined) query.set("offset", params.offset.toString());
+    if (params?.limit !== undefined) query.set("limit", params.limit.toString());
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    return this.request(`/conversations/${conversationId}/messages${queryString}`);
   }
 
-  async sendMessage(
-    conversationId: number,
-    data: SendMessageRequest
-  ): Promise<Message> {
+  async sendMessage(conversationId: number, data: SendMessageRequest): Promise<Message> {
     return this.request(`/conversations/${conversationId}/messages`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
-    })
+    });
   }
 
-  async deleteMessage(
-    conversationId: number,
-    messageId: number
-  ): Promise<{ message: string }> {
-    return this.request(
-      `/conversations/${conversationId}/messages/${messageId}`,
-      {
-        method: 'DELETE',
-      }
-    )
+  async deleteMessage(conversationId: number, messageId: number): Promise<{ message: string }> {
+    return this.request(`/conversations/${conversationId}/messages/${messageId}`, {
+      method: "DELETE",
+    });
   }
 
   async addMessageReaction(
     conversationId: number,
     messageId: number,
-    emoji: string
+    emoji: string,
   ): Promise<MessageReactionResponse> {
-    return this.request(
-      `/conversations/${conversationId}/messages/${messageId}/reactions`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ emoji }),
-      }
-    )
+    return this.request(`/conversations/${conversationId}/messages/${messageId}/reactions`, {
+      method: "POST",
+      body: JSON.stringify({ emoji }),
+    });
   }
 
   async removeMessageReaction(
     conversationId: number,
     messageId: number,
-    emoji: string
+    emoji: string,
   ): Promise<MessageReactionResponse> {
-    const query = new URLSearchParams({ emoji })
+    const query = new URLSearchParams({ emoji });
     return this.request(
       `/conversations/${conversationId}/messages/${messageId}/reactions?${query.toString()}`,
       {
-        method: 'DELETE',
-      }
-    )
+        method: "DELETE",
+      },
+    );
   }
 
   async reportMessage(
     conversationId: number,
     messageId: number,
-    data: ReportRequest
+    data: ReportRequest,
   ): Promise<ModerationReport> {
-    return this.request(
-      `/conversations/${conversationId}/messages/${messageId}/report`,
-      {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }
-    )
+    return this.request(`/conversations/${conversationId}/messages/${messageId}/report`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   }
 
   // Chatrooms (public group conversations)
   async getAllChatrooms(): Promise<(Conversation & { is_joined: boolean })[]> {
-    return this.request('/chatrooms')
+    return this.request("/chatrooms");
   }
 
   async getJoinedChatrooms(): Promise<Conversation[]> {
-    return this.request('/chatrooms/joined')
+    return this.request("/chatrooms/joined");
   }
 
   async joinChatroom(chatroomId: number): Promise<{ message: string }> {
     return this.request(`/chatrooms/${chatroomId}/join`, {
-      method: 'POST',
-    })
+      method: "POST",
+    });
   }
 
   async removeChatroomParticipant(
     chatroomId: number,
-    participantId: number
+    participantId: number,
   ): Promise<{ message: string }> {
-    return this.request(
-      `/chatrooms/${chatroomId}/participants/${participantId}`,
-      {
-        method: 'DELETE',
-      }
-    )
+    return this.request(`/chatrooms/${chatroomId}/participants/${participantId}`, {
+      method: "DELETE",
+    });
   }
 
-  async getChatroomModerators(
-    chatroomId: number
-  ): Promise<ChatroomModerator[]> {
-    return this.request(`/chatrooms/${chatroomId}/moderators`)
+  async getChatroomModerators(chatroomId: number): Promise<ChatroomModerator[]> {
+    return this.request(`/chatrooms/${chatroomId}/moderators`);
   }
 
-  async addChatroomModerator(
-    chatroomId: number,
-    userId: number
-  ): Promise<ChatroomModerator> {
+  async addChatroomModerator(chatroomId: number, userId: number): Promise<ChatroomModerator> {
     return this.request(`/chatrooms/${chatroomId}/moderators/${userId}`, {
-      method: 'POST',
-    })
+      method: "POST",
+    });
   }
 
-  async removeChatroomModerator(
-    chatroomId: number,
-    userId: number
-  ): Promise<{ message: string }> {
+  async removeChatroomModerator(chatroomId: number, userId: number): Promise<{ message: string }> {
     return this.request(`/chatrooms/${chatroomId}/moderators/${userId}`, {
-      method: 'DELETE',
-    })
+      method: "DELETE",
+    });
   }
 
   async getChatroomMutes(chatroomId: number): Promise<ChatroomMute[]> {
-    return this.request(`/chatrooms/${chatroomId}/mutes`)
+    return this.request(`/chatrooms/${chatroomId}/mutes`);
   }
 
   async muteChatroomUser(
     chatroomId: number,
     userId: number,
-    data: MuteChatroomUserRequest
+    data: MuteChatroomUserRequest,
   ): Promise<{ message: string }> {
     return this.request(`/chatrooms/${chatroomId}/mutes/${userId}`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
-    })
+    });
   }
 
-  async unmuteChatroomUser(
-    chatroomId: number,
-    userId: number
-  ): Promise<{ message: string }> {
+  async unmuteChatroomUser(chatroomId: number, userId: number): Promise<{ message: string }> {
     return this.request(`/chatrooms/${chatroomId}/mutes/${userId}`, {
-      method: 'DELETE',
-    })
+      method: "DELETE",
+    });
   }
 
   async getChatroomBans(chatroomId: number): Promise<ChatroomBan[]> {
-    return this.request(`/chatrooms/${chatroomId}/bans`)
+    return this.request(`/chatrooms/${chatroomId}/bans`);
   }
 
   async banChatroomUser(
     chatroomId: number,
     userId: number,
-    data?: { reason?: string }
+    data?: { reason?: string },
   ): Promise<{ message: string }> {
     return this.request(`/chatrooms/${chatroomId}/bans/${userId}`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data ?? {}),
-    })
+    });
   }
 
-  async unbanChatroomUser(
-    chatroomId: number,
-    userId: number
-  ): Promise<{ message: string }> {
+  async unbanChatroomUser(chatroomId: number, userId: number): Promise<{ message: string }> {
     return this.request(`/chatrooms/${chatroomId}/bans/${userId}`, {
-      method: 'DELETE',
-    })
+      method: "DELETE",
+    });
   }
 
   // Sanctums
   async getSanctums(): Promise<SanctumDTO[]> {
-    return this.request('/sanctums')
+    return this.request("/sanctums");
   }
 
   async searchSanctums(q: string): Promise<SanctumDTO[]> {
-    const query = new URLSearchParams({ q })
-    return this.request(`/sanctums?${query.toString()}`)
+    const query = new URLSearchParams({ q });
+    return this.request(`/sanctums?${query.toString()}`);
   }
 
   async getSanctum(slug: string): Promise<SanctumDTO> {
-    return this.request(`/sanctums/${slug}`)
+    return this.request(`/sanctums/${slug}`);
   }
 
-  async createSanctumRequest(
-    payload: CreateSanctumRequestInput
-  ): Promise<SanctumRequest> {
-    return this.request('/sanctums/requests', {
-      method: 'POST',
+  async createSanctumRequest(payload: CreateSanctumRequestInput): Promise<SanctumRequest> {
+    return this.request("/sanctums/requests", {
+      method: "POST",
       body: JSON.stringify(payload),
-    })
+    });
   }
 
   async getMySanctumRequests(): Promise<SanctumRequest[]> {
-    return this.request('/sanctums/requests/me')
+    return this.request("/sanctums/requests/me");
   }
 
   async getMySanctumMemberships(): Promise<SanctumMembership[]> {
-    return this.request('/sanctums/memberships/me')
+    return this.request("/sanctums/memberships/me");
   }
 
   async upsertMySanctumMemberships(
-    payload: BulkSanctumMembershipsInput
+    payload: BulkSanctumMembershipsInput,
   ): Promise<SanctumMembership[]> {
-    return this.request('/sanctums/memberships/bulk', {
-      method: 'POST',
+    return this.request("/sanctums/memberships/bulk", {
+      method: "POST",
       body: JSON.stringify(payload),
-    })
+    });
   }
 
-  async getAdminSanctumRequests(
-    status: AdminSanctumRequestStatus
-  ): Promise<SanctumRequest[]> {
-    return this.request(`/admin/sanctum-requests?status=${status}`)
+  async getAdminSanctumRequests(status: AdminSanctumRequestStatus): Promise<SanctumRequest[]> {
+    return this.request(`/admin/sanctum-requests?status=${status}`);
   }
 
   async approveSanctumRequest(
     id: number,
-    review_notes?: string
+    review_notes?: string,
   ): Promise<AdminSanctumRequestActionResponse> {
     return this.request(`/admin/sanctum-requests/${id}/approve`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ review_notes }),
-    })
+    });
   }
 
-  async rejectSanctumRequest(
-    id: number,
-    review_notes?: string
-  ): Promise<SanctumRequest> {
+  async rejectSanctumRequest(id: number, review_notes?: string): Promise<SanctumRequest> {
     return this.request(`/admin/sanctum-requests/${id}/reject`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ review_notes }),
-    })
+    });
   }
 
   async getSanctumAdmins(slug: string): Promise<SanctumAdmin[]> {
-    return this.request(`/sanctums/${slug}/admins`)
+    return this.request(`/sanctums/${slug}/admins`);
   }
 
-  async promoteSanctumAdmin(
-    slug: string,
-    userId: number
-  ): Promise<SanctumAdmin> {
+  async promoteSanctumAdmin(slug: string, userId: number): Promise<SanctumAdmin> {
     return this.request(`/sanctums/${slug}/admins/${userId}`, {
-      method: 'POST',
-    })
+      method: "POST",
+    });
   }
 
-  async demoteSanctumAdmin(
-    slug: string,
-    userId: number
-  ): Promise<SanctumAdmin> {
+  async demoteSanctumAdmin(slug: string, userId: number): Promise<SanctumAdmin> {
     return this.request(`/sanctums/${slug}/admins/${userId}`, {
-      method: 'DELETE',
-    })
+      method: "DELETE",
+    });
   }
 
   async getAdminReports(params?: {
-    status?: string
-    target_type?: string
-    limit?: number
-    offset?: number
+    status?: string;
+    target_type?: string;
+    limit?: number;
+    offset?: number;
   }): Promise<ModerationReport[]> {
-    const query = new URLSearchParams()
-    if (params?.status) query.set('status', params.status)
-    if (params?.target_type) query.set('target_type', params.target_type)
-    if (params?.limit !== undefined) query.set('limit', String(params.limit))
-    if (params?.offset !== undefined) query.set('offset', String(params.offset))
-    const queryString = query.toString() ? `?${query.toString()}` : ''
-    return this.request(`/admin/reports${queryString}`)
+    const query = new URLSearchParams();
+    if (params?.status) query.set("status", params.status);
+    if (params?.target_type) query.set("target_type", params.target_type);
+    if (params?.limit !== undefined) query.set("limit", String(params.limit));
+    if (params?.offset !== undefined) query.set("offset", String(params.offset));
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    return this.request(`/admin/reports${queryString}`);
   }
 
   async resolveAdminReport(
     id: number,
-    data: ResolveModerationReportRequest
+    data: ResolveModerationReportRequest,
   ): Promise<ModerationReport> {
     return this.request(`/admin/reports/${id}/resolve`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
-    })
+    });
   }
 
-  async getAdminBanRequests(
-    params?: PaginationParams
-  ): Promise<AdminBanRequest[]> {
-    const query = new URLSearchParams()
-    if (params?.offset !== undefined)
-      query.set('offset', params.offset.toString())
-    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
-    const queryString = query.toString() ? `?${query.toString()}` : ''
-    return this.request(`/admin/ban-requests${queryString}`)
+  async getAdminBanRequests(params?: PaginationParams): Promise<AdminBanRequest[]> {
+    const query = new URLSearchParams();
+    if (params?.offset !== undefined) query.set("offset", params.offset.toString());
+    if (params?.limit !== undefined) query.set("limit", params.limit.toString());
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    return this.request(`/admin/ban-requests${queryString}`);
   }
 
-  async getAdminUsers(
-    params?: PaginationParams & { q?: string }
-  ): Promise<User[]> {
-    const query = new URLSearchParams()
-    if (params?.q) query.set('q', params.q)
-    if (params?.offset !== undefined)
-      query.set('offset', params.offset.toString())
-    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
-    const queryString = query.toString() ? `?${query.toString()}` : ''
-    return this.request(`/admin/users${queryString}`)
+  async getAdminUsers(params?: PaginationParams & { q?: string }): Promise<User[]> {
+    const query = new URLSearchParams();
+    if (params?.q) query.set("q", params.q);
+    if (params?.offset !== undefined) query.set("offset", params.offset.toString());
+    if (params?.limit !== undefined) query.set("limit", params.limit.toString());
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    return this.request(`/admin/users${queryString}`);
   }
 
   async getAdminUserDetail(id: number): Promise<AdminUserDetailResponse> {
-    return this.request(`/admin/users/${id}`)
+    return this.request(`/admin/users/${id}`);
   }
 
-  async banAdminUser(
-    id: number,
-    data: BanUserRequest = {}
-  ): Promise<{ message: string }> {
+  async banAdminUser(id: number, data: BanUserRequest = {}): Promise<{ message: string }> {
     return this.request(`/admin/users/${id}/ban`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
-    })
+    });
   }
 
   async unbanAdminUser(id: number): Promise<{ message: string }> {
     return this.request(`/admin/users/${id}/unban`, {
-      method: 'POST',
-    })
+      method: "POST",
+    });
   }
 
-  async getAdminDeletedPosts(
-    params?: PaginationParams
-  ): Promise<AdminDeletedPost[]> {
-    const query = new URLSearchParams()
-    if (params?.offset !== undefined)
-      query.set('offset', params.offset.toString())
-    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
-    const queryString = query.toString() ? `?${query.toString()}` : ''
-    return this.request(`/admin/deleted-posts${queryString}`)
+  async getAdminDeletedPosts(params?: PaginationParams): Promise<AdminDeletedPost[]> {
+    const query = new URLSearchParams();
+    if (params?.offset !== undefined) query.set("offset", params.offset.toString());
+    if (params?.limit !== undefined) query.set("limit", params.limit.toString());
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    return this.request(`/admin/deleted-posts${queryString}`);
   }
 
-  async getAdminDeletedComments(
-    params?: PaginationParams
-  ): Promise<AdminDeletedComment[]> {
-    const query = new URLSearchParams()
-    if (params?.offset !== undefined)
-      query.set('offset', params.offset.toString())
-    if (params?.limit !== undefined) query.set('limit', params.limit.toString())
-    const queryString = query.toString() ? `?${query.toString()}` : ''
-    return this.request(`/admin/deleted-comments${queryString}`)
+  async getAdminDeletedComments(params?: PaginationParams): Promise<AdminDeletedComment[]> {
+    const query = new URLSearchParams();
+    if (params?.offset !== undefined) query.set("offset", params.offset.toString());
+    if (params?.limit !== undefined) query.set("limit", params.limit.toString());
+    const queryString = query.toString() ? `?${query.toString()}` : "";
+    return this.request(`/admin/deleted-comments${queryString}`);
   }
 
   // Games
   async createGameRoom(type: string): Promise<GameRoom> {
-    return this.request('/games/rooms', {
-      method: 'POST',
+    return this.request("/games/rooms", {
+      method: "POST",
       body: JSON.stringify({ type }),
-    })
+    });
   }
 
   async getActiveGameRooms(type?: string): Promise<GameRoom[]> {
-    const query = type ? `?type=${type}` : ''
-    return this.request(`/games/rooms/active${query}`)
+    const query = type ? `?type=${type}` : "";
+    return this.request(`/games/rooms/active${query}`);
   }
 
   async getGameRoom(id: number): Promise<GameRoom> {
-    return this.request(`/games/rooms/${id}`)
+    return this.request(`/games/rooms/${id}`);
   }
 
-  async leaveGameRoom(
-    id: number
-  ): Promise<{ message: string; status: string }> {
+  async leaveGameRoom(id: number): Promise<{ message: string; status: string }> {
     return this.request(`/games/rooms/${id}/leave`, {
-      method: 'POST',
-    })
+      method: "POST",
+    });
   }
 
   async getGameRoomMessages(id: number): Promise<GameRoomChatMessage[]> {
-    return this.request(`/games/rooms/${id}/messages`)
+    return this.request(`/games/rooms/${id}/messages`);
   }
 
   // biome-ignore lint/suspicious/noExplicitAny: dynamic stats object
   async getGameStats(type: string): Promise<any> {
-    return this.request(`/games/stats/${type}`)
+    return this.request(`/games/stats/${type}`);
   }
 
   async getCurrentUser(): Promise<User> {
-    return this.request('/users/me')
+    return this.request("/users/me");
   }
 
   // WebSocket Tickets
   async issueWSTicket(): Promise<{ ticket: string; expires_in: number }> {
-    return this.request('/ws/ticket', {
-      method: 'POST',
-    })
+    return this.request("/ws/ticket", {
+      method: "POST",
+    });
   }
 }
 
-export const apiClient = new ApiClient(API_BASE_URL)
+export const apiClient = new ApiClient(API_BASE_URL);

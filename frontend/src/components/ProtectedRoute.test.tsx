@@ -1,84 +1,84 @@
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
-import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 import {
   useIsAuthenticated as useIsAuthenticatedHook,
   useValidateToken as useValidateTokenHook,
-} from '@/hooks/useUsers'
+} from "@/hooks/useUsers";
 
-vi.mock('@/hooks/useUsers', () => ({
+vi.mock("@/hooks/useUsers", () => ({
   useIsAuthenticated: vi.fn(),
   useValidateToken: vi.fn(),
-}))
+}));
 
-vi.mock('@/stores/useAuthSessionStore', () => ({
+vi.mock("@/stores/useAuthSessionStore", () => ({
   useAuthSessionStore: (selector: (s: { _hasHydrated: boolean }) => boolean) =>
     selector({ _hasHydrated: true }),
-}))
+}));
 
 function renderProtected(path: string) {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route
-          path='/'
+          path="/"
           element={
             <ProtectedRoute>
               <div>Protected content</div>
             </ProtectedRoute>
           }
         />
-        <Route path='/login' element={<div>Login page</div>} />
+        <Route path="/login" element={<div>Login page</div>} />
       </Routes>
-    </MemoryRouter>
-  )
+    </MemoryRouter>,
+  );
 }
 
-describe('ProtectedRoute', () => {
-  it('renders children when authenticated and token valid', () => {
-    vi.mocked(useIsAuthenticatedHook).mockReturnValue(true)
+describe("ProtectedRoute", () => {
+  it("renders children when authenticated and token valid", () => {
+    vi.mocked(useIsAuthenticatedHook).mockReturnValue(true);
     vi.mocked(useValidateTokenHook).mockReturnValue({
       data: true,
       isLoading: false,
-    } as never)
+    } as never);
 
-    renderProtected('/')
-    expect(screen.getByText('Protected content')).toBeInTheDocument()
-  })
+    renderProtected("/");
+    expect(screen.getByText("Protected content")).toBeInTheDocument();
+  });
 
-  it('redirects to login when not authenticated', () => {
-    vi.mocked(useIsAuthenticatedHook).mockReturnValue(false)
+  it("redirects to login when not authenticated", () => {
+    vi.mocked(useIsAuthenticatedHook).mockReturnValue(false);
     vi.mocked(useValidateTokenHook).mockReturnValue({
       data: undefined,
       isLoading: false,
-    } as never)
+    } as never);
 
-    renderProtected('/')
-    expect(screen.getByText('Login page')).toBeInTheDocument()
-    expect(screen.queryByText('Protected content')).not.toBeInTheDocument()
-  })
+    renderProtected("/");
+    expect(screen.getByText("Login page")).toBeInTheDocument();
+    expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
+  });
 
-  it('shows validating session when loading and authenticated', () => {
-    vi.mocked(useIsAuthenticatedHook).mockReturnValue(true)
+  it("shows validating session when loading and authenticated", () => {
+    vi.mocked(useIsAuthenticatedHook).mockReturnValue(true);
     vi.mocked(useValidateTokenHook).mockReturnValue({
       data: undefined,
       isLoading: true,
-    } as never)
+    } as never);
 
-    renderProtected('/')
-    expect(screen.getByText('Validating session...')).toBeInTheDocument()
-  })
+    renderProtected("/");
+    expect(screen.getByText("Validating session...")).toBeInTheDocument();
+  });
 
-  it('renders children while background validation runs with optimistic token state', () => {
-    vi.mocked(useIsAuthenticatedHook).mockReturnValue(true)
+  it("renders children while background validation runs with optimistic token state", () => {
+    vi.mocked(useIsAuthenticatedHook).mockReturnValue(true);
     vi.mocked(useValidateTokenHook).mockReturnValue({
       data: true,
       isLoading: true,
-    } as never)
+    } as never);
 
-    renderProtected('/')
-    expect(screen.getByText('Protected content')).toBeInTheDocument()
-  })
-})
+    renderProtected("/");
+    expect(screen.getByText("Protected content")).toBeInTheDocument();
+  });
+});

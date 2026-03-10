@@ -1,9 +1,6 @@
-import type { User } from '@/api/types'
-import {
-  type ModerationActions,
-  UserMenuItems,
-} from '@/components/shared/UserMenuItems'
-import { UserContextMenu } from '@/components/UserContextMenu'
+import type { User } from "@/api/types";
+import { type ModerationActions, UserMenuItems } from "@/components/shared/UserMenuItems";
+import { UserContextMenu } from "@/components/UserContextMenu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,29 +8,29 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { useUserActions } from '@/hooks/useUserActions'
+} from "@/components/ui/dropdown-menu";
+import { useUserActions } from "@/hooks/useUserActions";
 
 interface UserMenuProps {
-  user: User
-  children: React.ReactNode
-  moderationActions?: ModerationActions
+  user: User;
+  children: React.ReactNode;
+  moderationActions?: ModerationActions;
 }
 
 export function UserMenu({ user, children, moderationActions }: UserMenuProps) {
-  const actions = useUserActions(user)
+  const actions = useUserActions(user);
 
   if (actions.isSelf) {
-    return <>{children}</>
+    return <>{children}</>;
   }
 
   return (
     <UserContextMenu user={user} moderationActions={moderationActions}>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild className='cursor-pointer'>
+        <DropdownMenuTrigger asChild className="cursor-pointer">
           {children}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align='start' className='w-56'>
+        <DropdownMenuContent align="start" className="w-56">
           <UserMenuItems
             user={user}
             actions={actions}
@@ -45,5 +42,5 @@ export function UserMenu({ user, children, moderationActions }: UserMenuProps) {
         </DropdownMenuContent>
       </DropdownMenu>
     </UserContextMenu>
-  )
+  );
 }

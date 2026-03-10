@@ -1,87 +1,70 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/api/client'
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/api/client";
 import type {
   BanUserRequest,
   MuteChatroomUserRequest,
   PaginationParams,
   ResolveModerationReportRequest,
-} from '@/api/types'
-import { handleAuthOrFKError } from '@/lib/handleAuthOrFKError'
+} from "@/api/types";
+import { handleAuthOrFKError } from "@/lib/handleAuthOrFKError";
 
 export const adminModerationKeys = {
-  all: ['admin-moderation'] as const,
-  reports: (params?: {
-    status?: string
-    target_type?: string
-    limit?: number
-    offset?: number
-  }) => [...adminModerationKeys.all, 'reports', params ?? {}] as const,
+  all: ["admin-moderation"] as const,
+  reports: (params?: { status?: string; target_type?: string; limit?: number; offset?: number }) =>
+    [...adminModerationKeys.all, "reports", params ?? {}] as const,
   banRequests: (params?: { offset?: number; limit?: number }) =>
-    [...adminModerationKeys.all, 'ban-requests', params ?? {}] as const,
+    [...adminModerationKeys.all, "ban-requests", params ?? {}] as const,
   users: (params?: { q?: string; offset?: number; limit?: number }) =>
-    [...adminModerationKeys.all, 'users', params ?? {}] as const,
-  userDetail: (userId: number) =>
-    [...adminModerationKeys.all, 'users', userId] as const,
+    [...adminModerationKeys.all, "users", params ?? {}] as const,
+  userDetail: (userId: number) => [...adminModerationKeys.all, "users", userId] as const,
   roomMutes: (chatroomId: number) =>
-    [...adminModerationKeys.all, 'room-mutes', chatroomId] as const,
+    [...adminModerationKeys.all, "room-mutes", chatroomId] as const,
   deletedPosts: (params?: { offset?: number; limit?: number }) =>
-    [...adminModerationKeys.all, 'deleted-posts', params ?? {}] as const,
+    [...adminModerationKeys.all, "deleted-posts", params ?? {}] as const,
   deletedComments: (params?: { offset?: number; limit?: number }) =>
-    [...adminModerationKeys.all, 'deleted-comments', params ?? {}] as const,
-}
+    [...adminModerationKeys.all, "deleted-comments", params ?? {}] as const,
+};
 
 export function useAdminReports(params?: {
-  status?: string
-  target_type?: string
-  limit?: number
-  offset?: number
+  status?: string;
+  target_type?: string;
+  limit?: number;
+  offset?: number;
 }) {
   return useQuery({
     queryKey: adminModerationKeys.reports(params),
     queryFn: () => apiClient.getAdminReports(params),
-  })
+  });
 }
 
 export function useResolveAdminReport() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      id,
-      payload,
-    }: {
-      id: number
-      payload: ResolveModerationReportRequest
-    }) => apiClient.resolveAdminReport(id, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: ResolveModerationReportRequest }) =>
+      apiClient.resolveAdminReport(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [...adminModerationKeys.all, 'reports'],
-      })
+        queryKey: [...adminModerationKeys.all, "reports"],
+      });
     },
-    onError: error => {
-      handleAuthOrFKError(error)
+    onError: (error) => {
+      handleAuthOrFKError(error);
     },
-  })
+  });
 }
 
-export function useAdminBanRequests(params?: {
-  offset?: number
-  limit?: number
-}) {
+export function useAdminBanRequests(params?: { offset?: number; limit?: number }) {
   return useQuery({
     queryKey: adminModerationKeys.banRequests(params),
     queryFn: () => apiClient.getAdminBanRequests(params),
-  })
+  });
 }
 
-export function useAdminUsers(params?: {
-  q?: string
-  offset?: number
-  limit?: number
-}) {
+export function useAdminUsers(params?: { q?: string; offset?: number; limit?: number }) {
   return useQuery({
     queryKey: adminModerationKeys.users(params),
     queryFn: () => apiClient.getAdminUsers(params),
-  })
+  });
 }
 
 export function useAdminUserDetail(userId: number) {
@@ -89,41 +72,41 @@ export function useAdminUserDetail(userId: number) {
     queryKey: adminModerationKeys.userDetail(userId),
     queryFn: () => apiClient.getAdminUserDetail(userId),
     enabled: userId > 0,
-  })
+  });
 }
 
 export function useBanAdminUser() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload?: BanUserRequest }) =>
       apiClient.banAdminUser(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [...adminModerationKeys.all, 'users'],
-      })
+        queryKey: [...adminModerationKeys.all, "users"],
+      });
       queryClient.invalidateQueries({
-        queryKey: [...adminModerationKeys.all, 'ban-requests'],
-      })
+        queryKey: [...adminModerationKeys.all, "ban-requests"],
+      });
     },
-    onError: error => {
-      handleAuthOrFKError(error)
+    onError: (error) => {
+      handleAuthOrFKError(error);
     },
-  })
+  });
 }
 
 export function useUnbanAdminUser() {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => apiClient.unbanAdminUser(id),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: [...adminModerationKeys.all, 'users'],
-      })
+        queryKey: [...adminModerationKeys.all, "users"],
+      });
     },
-    onError: error => {
-      handleAuthOrFKError(error)
+    onError: (error) => {
+      handleAuthOrFKError(error);
     },
-  })
+  });
 }
 
 export function useChatroomMutes(chatroomId: number) {
@@ -131,56 +114,50 @@ export function useChatroomMutes(chatroomId: number) {
     queryKey: adminModerationKeys.roomMutes(chatroomId),
     queryFn: () => apiClient.getChatroomMutes(chatroomId),
     enabled: chatroomId > 0,
-  })
+  });
 }
 
 export function useMuteChatroomUser(chatroomId: number) {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      userId,
-      payload,
-    }: {
-      userId: number
-      payload: MuteChatroomUserRequest
-    }) => apiClient.muteChatroomUser(chatroomId, userId, payload),
+    mutationFn: ({ userId, payload }: { userId: number; payload: MuteChatroomUserRequest }) =>
+      apiClient.muteChatroomUser(chatroomId, userId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: adminModerationKeys.roomMutes(chatroomId),
-      })
+      });
     },
-    onError: error => {
-      handleAuthOrFKError(error)
+    onError: (error) => {
+      handleAuthOrFKError(error);
     },
-  })
+  });
 }
 
 export function useUnmuteChatroomUser(chatroomId: number) {
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (userId: number) =>
-      apiClient.unmuteChatroomUser(chatroomId, userId),
+    mutationFn: (userId: number) => apiClient.unmuteChatroomUser(chatroomId, userId),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: adminModerationKeys.roomMutes(chatroomId),
-      })
+      });
     },
-    onError: error => {
-      handleAuthOrFKError(error)
+    onError: (error) => {
+      handleAuthOrFKError(error);
     },
-  })
+  });
 }
 
 export function useAdminDeletedPosts(params?: PaginationParams) {
   return useQuery({
     queryKey: adminModerationKeys.deletedPosts(params),
     queryFn: () => apiClient.getAdminDeletedPosts(params),
-  })
+  });
 }
 
 export function useAdminDeletedComments(params?: PaginationParams) {
   return useQuery({
     queryKey: adminModerationKeys.deletedComments(params),
     queryFn: () => apiClient.getAdminDeletedComments(params),
-  })
+  });
 }

@@ -1,27 +1,25 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { Message, User } from '@/api/types'
-import { ChatDock } from '@/components/chat/ChatDock'
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { Message, User } from "@/api/types";
+import { ChatDock } from "@/components/chat/ChatDock";
 
-const toastMessageMock = vi.fn()
-vi.mock('sonner', () => ({
+const toastMessageMock = vi.fn();
+vi.mock("sonner", () => ({
   toast: Object.assign((...args: unknown[]) => toastMessageMock(...args), {
     message: vi.fn(),
     error: vi.fn(),
     success: vi.fn(),
   }),
-}))
+}));
 
-let onMessageSubscription:
-  | ((message: Message, conversationId: number) => void)
-  | null = null
-const incrementUnreadMock = vi.fn(() => 1)
-const clearUnreadMock = vi.fn()
+let onMessageSubscription: ((message: Message, conversationId: number) => void) | null = null;
+const incrementUnreadMock = vi.fn(() => 1);
+const clearUnreadMock = vi.fn();
 const chatDockState = {
   isOpen: false,
   minimized: false,
-  view: 'list' as const,
+  view: "list" as const,
   activeConversationId: null as number | null,
   activePageConversationId: null as number | null,
   openConversationIds: [] as number[],
@@ -36,35 +34,35 @@ const chatDockState = {
   incrementUnread: vi.fn(),
   dockPos: null as { x: number; y: number } | null,
   setDockPos: vi.fn(),
-}
+};
 
-vi.mock('@/hooks/useMediaQuery', () => ({
+vi.mock("@/hooks/useMediaQuery", () => ({
   useIsMobile: () => false,
-}))
+}));
 
-vi.mock('@/hooks/useFriends', () => ({
+vi.mock("@/hooks/useFriends", () => ({
   useFriends: () => ({
-    data: [{ id: 2, username: 'friend' }],
+    data: [{ id: 2, username: "friend" }],
     isSuccess: true,
   }),
-}))
+}));
 
-vi.mock('@/hooks/useChat', () => ({
+vi.mock("@/hooks/useChat", () => ({
   useConversations: () => ({
     data: [
       {
         id: 1,
         is_group: false,
         name: null,
-        participants: [{ id: 2, username: 'friend' }],
+        participants: [{ id: 2, username: "friend" }],
       },
     ],
   }),
   useConversation: () => ({ data: undefined }),
   useCreateConversation: () => ({ mutate: vi.fn() }),
-}))
+}));
 
-vi.mock('@/providers/ChatProvider', () => ({
+vi.mock("@/providers/ChatProvider", () => ({
   useChatContext: () => ({
     isConnected: true,
     joinRoom: vi.fn(),
@@ -76,28 +74,26 @@ vi.mock('@/providers/ChatProvider', () => ({
     clearUnread: clearUnreadMock,
     subscribeOnTyping: () => () => {},
     subscribeOnPresence: () => () => {},
-    subscribeOnMessage: (
-      cb: (message: Message, conversationId: number) => void
-    ) => {
-      onMessageSubscription = cb
+    subscribeOnMessage: (cb: (message: Message, conversationId: number) => void) => {
+      onMessageSubscription = cb;
       return () => {
-        onMessageSubscription = null
-      }
+        onMessageSubscription = null;
+      };
     },
   }),
-}))
+}));
 
-vi.mock('@/stores/useChatDockStore', () => ({
+vi.mock("@/stores/useChatDockStore", () => ({
   useChatDockStore: Object.assign(() => chatDockState, {
     getState: () => chatDockState,
   }),
-}))
+}));
 
-vi.mock('@/hooks/useUsers', () => ({
-  getCurrentUser: () => ({ id: 1, username: 'me' }),
-}))
+vi.mock("@/hooks/useUsers", () => ({
+  getCurrentUser: () => ({ id: 1, username: "me" }),
+}));
 
-vi.mock('@/hooks/useAudio', () => ({
+vi.mock("@/hooks/useAudio", () => ({
   useAudio: () => ({
     playNewMessageSound: vi.fn(),
     playFriendOnlineSound: vi.fn(),
@@ -105,102 +101,102 @@ vi.mock('@/hooks/useAudio', () => ({
     playRoomAlertSound: vi.fn(),
     playDropPieceSound: vi.fn(),
   }),
-}))
+}));
 
 function minimalUser(username: string): User {
-  const t = new Date().toISOString()
+  const t = new Date().toISOString();
   return {
     id: 2,
     username,
     email: `${username}@test.example`,
     created_at: t,
     updated_at: t,
-  }
+  };
 }
 
-describe('ChatDock', () => {
+describe("ChatDock", () => {
   afterEach(() => {
-    chatDockState.isOpen = false
-    chatDockState.minimized = false
-    chatDockState.dockPos = null
-    onMessageSubscription = null
-    incrementUnreadMock.mockReset()
-    clearUnreadMock.mockReset()
-    toastMessageMock.mockReset()
-  })
+    chatDockState.isOpen = false;
+    chatDockState.minimized = false;
+    chatDockState.dockPos = null;
+    onMessageSubscription = null;
+    incrementUnreadMock.mockReset();
+    clearUnreadMock.mockReset();
+    toastMessageMock.mockReset();
+  });
 
-  it('ignores unknown-conversation messages for unread/toast updates', () => {
+  it("ignores unknown-conversation messages for unread/toast updates", () => {
     render(
-      <MemoryRouter initialEntries={['/posts']}>
+      <MemoryRouter initialEntries={["/posts"]}>
         <ChatDock />
-      </MemoryRouter>
-    )
+      </MemoryRouter>,
+    );
 
-    expect(onMessageSubscription).toBeTypeOf('function')
+    expect(onMessageSubscription).toBeTypeOf("function");
 
-    const now = new Date().toISOString()
+    const now = new Date().toISOString();
     onMessageSubscription?.(
       {
         id: 50,
         conversation_id: 999,
         sender_id: 99, // Not a friend (friend ID is 2)
-        content: 'hello',
-        message_type: 'text',
+        content: "hello",
+        message_type: "text",
         is_read: false,
         created_at: now,
         updated_at: now,
-        sender: minimalUser('stranger'),
+        sender: minimalUser("stranger"),
       },
-      999
-    )
+      999,
+    );
 
-    expect(incrementUnreadMock).not.toHaveBeenCalled()
-    expect(toastMessageMock).not.toHaveBeenCalled()
-  })
+    expect(incrementUnreadMock).not.toHaveBeenCalled();
+    expect(toastMessageMock).not.toHaveBeenCalled();
+  });
 
-  it('increments unread and shows toast for known conversation messages', () => {
+  it("increments unread and shows toast for known conversation messages", () => {
     render(
-      <MemoryRouter initialEntries={['/posts']}>
+      <MemoryRouter initialEntries={["/posts"]}>
         <ChatDock />
-      </MemoryRouter>
-    )
+      </MemoryRouter>,
+    );
 
-    const now = new Date().toISOString()
+    const now = new Date().toISOString();
     onMessageSubscription?.(
       {
         id: 51,
         conversation_id: 1,
         sender_id: 2,
-        content: 'hello known room',
-        message_type: 'text',
+        content: "hello known room",
+        message_type: "text",
         is_read: false,
         created_at: now,
         updated_at: now,
-        sender: minimalUser('friend'),
+        sender: minimalUser("friend"),
       },
-      1
-    )
+      1,
+    );
 
-    expect(incrementUnreadMock).toHaveBeenCalledWith(1)
-    expect(toastMessageMock).toHaveBeenCalled()
-  })
+    expect(incrementUnreadMock).toHaveBeenCalledWith(1);
+    expect(toastMessageMock).toHaveBeenCalled();
+  });
 
-  it('opens the panel to the left when the launcher is near the right edge', async () => {
-    chatDockState.isOpen = true
-    chatDockState.dockPos = { x: 900, y: 700 }
+  it("opens the panel to the left when the launcher is near the right edge", async () => {
+    chatDockState.isOpen = true;
+    chatDockState.dockPos = { x: 900, y: 700 };
 
     render(
-      <MemoryRouter initialEntries={['/posts']}>
+      <MemoryRouter initialEntries={["/posts"]}>
         <ChatDock />
-      </MemoryRouter>
-    )
+      </MemoryRouter>,
+    );
 
-    const button = screen.getByLabelText('Open messages')
-    const wrapper = button.parentElement as HTMLDivElement
-    const panel = wrapper.querySelector('.absolute.bottom-full')
-    expect(panel).toBeTruthy()
+    const button = screen.getByLabelText("Open messages");
+    const wrapper = button.parentElement as HTMLDivElement;
+    const panel = wrapper.querySelector(".absolute.bottom-full");
+    expect(panel).toBeTruthy();
 
-    vi.spyOn(wrapper, 'getBoundingClientRect').mockReturnValue({
+    vi.spyOn(wrapper, "getBoundingClientRect").mockReturnValue({
       x: 900,
       y: 700,
       left: 900,
@@ -210,16 +206,16 @@ describe('ChatDock', () => {
       width: 48,
       height: 48,
       toJSON: () => ({}),
-    })
-    Object.defineProperty(panel as HTMLElement, 'offsetWidth', {
+    });
+    Object.defineProperty(panel as HTMLElement, "offsetWidth", {
       configurable: true,
       value: 380,
-    })
+    });
 
-    fireEvent(window, new Event('resize'))
+    fireEvent(window, new Event("resize"));
 
     await waitFor(() => {
-      expect(panel).toHaveClass('right-0')
-    })
-  })
-})
+      expect(panel).toHaveClass("right-0");
+    });
+  });
+});

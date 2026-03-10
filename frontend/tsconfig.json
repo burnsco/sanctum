@@ -25,10 +25,5 @@
     }
   },
   "include": ["src", "playwright.config.ts", "vite.config.ts"],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "reports/playwright-report",
-    "reports/playwright-report/**"
-  ]
+  "exclude": ["node_modules", "dist", "reports/playwright-report", "reports/playwright-report/**"]
 }

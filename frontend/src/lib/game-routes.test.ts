@@ -1,48 +1,48 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from "vitest";
 import {
   buildGameRoomPath,
   getGameTypeLabel,
   isSupportedGameType,
   parseGameRoomPath,
-} from './game-routes'
+} from "./game-routes";
 
-describe('game-routes helpers', () => {
-  it('parses supported game room routes', () => {
-    expect(parseGameRoomPath('/games/connect4/42')).toEqual({
-      type: 'connect4',
+describe("game-routes helpers", () => {
+  it("parses supported game room routes", () => {
+    expect(parseGameRoomPath("/games/connect4/42")).toEqual({
+      type: "connect4",
       roomId: 42,
-    })
-    expect(parseGameRoomPath('/games/othello/9')).toEqual({
-      type: 'othello',
+    });
+    expect(parseGameRoomPath("/games/othello/9")).toEqual({
+      type: "othello",
       roomId: 9,
-    })
-    expect(parseGameRoomPath('/games/battleship/7')).toEqual({
-      type: 'battleship',
+    });
+    expect(parseGameRoomPath("/games/battleship/7")).toEqual({
+      type: "battleship",
       roomId: 7,
-    })
-    expect(parseGameRoomPath('/games/checkers/5')).toEqual({
-      type: 'checkers',
+    });
+    expect(parseGameRoomPath("/games/checkers/5")).toEqual({
+      type: "checkers",
       roomId: 5,
-    })
-  })
+    });
+  });
 
-  it('rejects unsupported or invalid routes', () => {
-    expect(parseGameRoomPath('/games/chess/1')).toBeNull()
-    expect(parseGameRoomPath('/games/connect4/not-a-number')).toBeNull()
-    expect(parseGameRoomPath('/games')).toBeNull()
-    expect(parseGameRoomPath('/games/battleship/1')).not.toBeNull()
-  })
+  it("rejects unsupported or invalid routes", () => {
+    expect(parseGameRoomPath("/games/chess/1")).toBeNull();
+    expect(parseGameRoomPath("/games/connect4/not-a-number")).toBeNull();
+    expect(parseGameRoomPath("/games")).toBeNull();
+    expect(parseGameRoomPath("/games/battleship/1")).not.toBeNull();
+  });
 
-  it('builds room paths and labels', () => {
-    expect(buildGameRoomPath('connect4', 18)).toBe('/games/connect4/18')
-    expect(getGameTypeLabel('othello')).toBe('Othello')
-    expect(isSupportedGameType('connect4')).toBe(true)
-    expect(isSupportedGameType('chess')).toBe(false)
-    expect(buildGameRoomPath('battleship', 5)).toBe('/games/battleship/5')
-    expect(getGameTypeLabel('battleship')).toBe('Battleship')
-    expect(isSupportedGameType('battleship')).toBe(true)
-    expect(buildGameRoomPath('checkers', 12)).toBe('/games/checkers/12')
-    expect(getGameTypeLabel('checkers')).toBe('Checkers')
-    expect(isSupportedGameType('checkers')).toBe(true)
-  })
-})
+  it("builds room paths and labels", () => {
+    expect(buildGameRoomPath("connect4", 18)).toBe("/games/connect4/18");
+    expect(getGameTypeLabel("othello")).toBe("Othello");
+    expect(isSupportedGameType("connect4")).toBe(true);
+    expect(isSupportedGameType("chess")).toBe(false);
+    expect(buildGameRoomPath("battleship", 5)).toBe("/games/battleship/5");
+    expect(getGameTypeLabel("battleship")).toBe("Battleship");
+    expect(isSupportedGameType("battleship")).toBe(true);
+    expect(buildGameRoomPath("checkers", 12)).toBe("/games/checkers/12");
+    expect(getGameTypeLabel("checkers")).toBe("Checkers");
+    expect(isSupportedGameType("checkers")).toBe(true);
+  });
+});

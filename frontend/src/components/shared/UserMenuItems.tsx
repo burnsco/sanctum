@@ -9,37 +9,37 @@ import {
   UserMinus,
   UserPlus,
   UserX,
-} from 'lucide-react'
-import type { ComponentType, ReactNode } from 'react'
-import type { User } from '@/api/types'
-import type { useUserActions } from '@/hooks/useUserActions'
+} from "lucide-react";
+import type { ComponentType, ReactNode } from "react";
+import type { User } from "@/api/types";
+import type { useUserActions } from "@/hooks/useUserActions";
 
 export interface ModerationActions {
-  canModerate: boolean
-  canManageModerators: boolean
-  isMuted?: boolean
-  isBanned?: boolean
-  isModerator?: boolean
-  onKick?: () => void
-  onTimeout?: () => void
-  onToggleBan?: () => void
-  onToggleModerator?: () => void
+  canModerate: boolean;
+  canManageModerators: boolean;
+  isMuted?: boolean;
+  isBanned?: boolean;
+  isModerator?: boolean;
+  onKick?: () => void;
+  onTimeout?: () => void;
+  onToggleBan?: () => void;
+  onToggleModerator?: () => void;
 }
 
 interface MenuItemProps {
-  onClick?: (e: React.MouseEvent) => void
-  disabled?: boolean
-  className?: string
-  children: ReactNode
+  onClick?: (e: React.MouseEvent) => void;
+  disabled?: boolean;
+  className?: string;
+  children: ReactNode;
 }
 
 interface UserMenuItemsProps {
-  user: User
-  actions: ReturnType<typeof useUserActions>
-  moderationActions?: ModerationActions
-  Item: ComponentType<MenuItemProps>
-  Separator: ComponentType<{ className?: string }>
-  Label: ComponentType<{ className?: string; children: ReactNode }>
+  user: User;
+  actions: ReturnType<typeof useUserActions>;
+  moderationActions?: ModerationActions;
+  Item: ComponentType<MenuItemProps>;
+  Separator: ComponentType<{ className?: string }>;
+  Label: ComponentType<{ className?: string; children: ReactNode }>;
 }
 
 /**
@@ -70,16 +70,14 @@ export function UserMenuItems({
     toggleBlockUser,
     handleReportUser,
     blockPending,
-  } = actions
+  } = actions;
 
   return (
     <>
-      <Label className='font-normal'>
-        <div className='flex flex-col space-y-1'>
-          <p className='text-sm font-medium leading-none'>{user.username}</p>
-          {user.bio && (
-            <p className='text-xs text-muted-foreground truncate'>{user.bio}</p>
-          )}
+      <Label className="font-normal">
+        <div className="flex flex-col space-y-1">
+          <p className="text-sm font-medium leading-none">{user.username}</p>
+          {user.bio && <p className="text-xs text-muted-foreground truncate">{user.bio}</p>}
         </div>
       </Label>
       <Separator />
@@ -87,36 +85,32 @@ export function UserMenuItems({
       {moderationActions?.canModerate && (
         <>
           <Item
-            onClick={e => {
-              e.stopPropagation()
-              moderationActions.onKick?.()
+            onClick={(e) => {
+              e.stopPropagation();
+              moderationActions.onKick?.();
             }}
           >
-            <UserX className='mr-2 h-4 w-4' />
+            <UserX className="mr-2 h-4 w-4" />
             <span>Kick from room</span>
           </Item>
           <Item
-            onClick={e => {
-              e.stopPropagation()
-              moderationActions.onTimeout?.()
+            onClick={(e) => {
+              e.stopPropagation();
+              moderationActions.onTimeout?.();
             }}
           >
-            <Timer className='mr-2 h-4 w-4' />
-            <span>
-              {moderationActions.isMuted ? 'Update Timeout' : 'Timeout User'}
-            </span>
+            <Timer className="mr-2 h-4 w-4" />
+            <span>{moderationActions.isMuted ? "Update Timeout" : "Timeout User"}</span>
           </Item>
           <Item
-            onClick={e => {
-              e.stopPropagation()
-              moderationActions.onToggleBan?.()
+            onClick={(e) => {
+              e.stopPropagation();
+              moderationActions.onToggleBan?.();
             }}
-            className='text-destructive focus:text-destructive'
+            className="text-destructive focus:text-destructive"
           >
-            <Ban className='mr-2 h-4 w-4' />
-            <span>
-              {moderationActions.isBanned ? 'Unban from Room' : 'Ban from Room'}
-            </span>
+            <Ban className="mr-2 h-4 w-4" />
+            <span>{moderationActions.isBanned ? "Unban from Room" : "Ban from Room"}</span>
           </Item>
           <Separator />
         </>
@@ -125,16 +119,16 @@ export function UserMenuItems({
       {moderationActions?.canManageModerators && (
         <>
           <Item
-            onClick={e => {
-              e.stopPropagation()
-              moderationActions.onToggleModerator?.()
+            onClick={(e) => {
+              e.stopPropagation();
+              moderationActions.onToggleModerator?.();
             }}
           >
-            <Shield className='mr-2 h-4 w-4' />
+            <Shield className="mr-2 h-4 w-4" />
             <span>
               {moderationActions.isModerator
-                ? 'Remove Room Moderator'
-                : 'Promote to Room Moderator'}
+                ? "Remove Room Moderator"
+                : "Promote to Room Moderator"}
             </span>
           </Item>
           <Separator />
@@ -142,61 +136,61 @@ export function UserMenuItems({
       )}
 
       <Item
-        onClick={e => {
-          e.stopPropagation()
-          handleViewProfile()
+        onClick={(e) => {
+          e.stopPropagation();
+          handleViewProfile();
         }}
       >
-        <UserIcon className='mr-2 h-4 w-4' />
+        <UserIcon className="mr-2 h-4 w-4" />
         <span>View Profile</span>
       </Item>
 
       <Item
-        onClick={e => {
-          e.stopPropagation()
-          handleMessage()
+        onClick={(e) => {
+          e.stopPropagation();
+          handleMessage();
         }}
       >
-        <MessageCircle className='mr-2 h-4 w-4' />
+        <MessageCircle className="mr-2 h-4 w-4" />
         <span>Message</span>
       </Item>
 
       <Item
-        onClick={e => {
-          e.stopPropagation()
-          void handleJoinConnect4()
+        onClick={(e) => {
+          e.stopPropagation();
+          void handleJoinConnect4();
         }}
         disabled={!targetOnline}
       >
-        <Gamepad2 className='mr-2 h-4 w-4' />
-        <span>{targetOnline ? 'Join Connect 4' : 'Connect 4 (Offline)'}</span>
+        <Gamepad2 className="mr-2 h-4 w-4" />
+        <span>{targetOnline ? "Join Connect 4" : "Connect 4 (Offline)"}</span>
       </Item>
 
       <Separator />
 
       {canAddFriend && (
         <Item
-          onClick={e => {
-            e.stopPropagation()
-            handleAddFriend()
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAddFriend();
           }}
           disabled={addFriendDisabled}
         >
-          <UserPlus className='mr-2 h-4 w-4' />
+          <UserPlus className="mr-2 h-4 w-4" />
           <span>{addFriendLabel}</span>
         </Item>
       )}
 
       {isFriend && (
         <Item
-          onClick={e => {
-            e.stopPropagation()
-            handleRemoveFriend()
+          onClick={(e) => {
+            e.stopPropagation();
+            handleRemoveFriend();
           }}
-          className='text-destructive focus:text-destructive'
+          className="text-destructive focus:text-destructive"
           disabled={removeFriendPending}
         >
-          <UserMinus className='mr-2 h-4 w-4' />
+          <UserMinus className="mr-2 h-4 w-4" />
           <span>Remove Friend</span>
         </Item>
       )}
@@ -204,27 +198,27 @@ export function UserMenuItems({
       <Separator />
 
       <Item
-        onClick={e => {
-          e.stopPropagation()
-          toggleBlockUser()
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleBlockUser();
         }}
         disabled={blockPending}
-        className='text-destructive focus:text-destructive'
+        className="text-destructive focus:text-destructive"
       >
-        <Ban className='mr-2 h-4 w-4' />
-        <span>{isBlocked ? 'Unblock User' : 'Block User'}</span>
+        <Ban className="mr-2 h-4 w-4" />
+        <span>{isBlocked ? "Unblock User" : "Block User"}</span>
       </Item>
 
       <Item
-        onClick={e => {
-          e.stopPropagation()
-          handleReportUser()
+        onClick={(e) => {
+          e.stopPropagation();
+          handleReportUser();
         }}
-        className='text-destructive focus:text-destructive'
+        className="text-destructive focus:text-destructive"
       >
-        <Flag className='mr-2 h-4 w-4' />
+        <Flag className="mr-2 h-4 w-4" />
         <span>Report User</span>
       </Item>
     </>
-  )
+  );
 }

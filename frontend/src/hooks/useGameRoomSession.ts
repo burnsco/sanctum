@@ -1,42 +1,39 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { toast } from 'sonner'
-import {
-  DEFAULT_RECONNECT_DELAYS,
-  useManagedWebSocket,
-} from '@/hooks/useManagedWebSocket'
-import { useTokenRefreshReconnect } from '@/hooks/useTokenRefreshReconnect'
-import { createTicketedWS } from '@/lib/ws-utils'
+import { useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { DEFAULT_RECONNECT_DELAYS, useManagedWebSocket } from "@/hooks/useManagedWebSocket";
+import { useTokenRefreshReconnect } from "@/hooks/useTokenRefreshReconnect";
+import { createTicketedWS } from "@/lib/ws-utils";
 
 type RoomSession = {
-  id: number
-  creator_id: number | null
-  opponent_id?: number | null
-  status: string
-}
+  id: number;
+  creator_id: number | null;
+  opponent_id?: number | null;
+  status: string;
+};
 
 type GameSocketAction = {
-  type: string
-  room_id?: number
-  payload?: unknown
-  [key: string]: unknown
-}
+  type: string;
+  room_id?: number;
+  payload?: unknown;
+  [key: string]: unknown;
+};
 
 interface UseGameRoomSessionOptions {
-  roomId?: number | null
-  token?: string | null
-  room?: RoomSession | null
-  currentUserId?: number
-  autoJoinPendingRoom?: boolean
-  joinPendingTitle?: string
-  joinPendingDescription?: string
-  onAction?: (action: Record<string, unknown>) => void
-  onSocketOpen?: () => void
+  roomId?: number | null;
+  token?: string | null;
+  room?: RoomSession | null;
+  currentUserId?: number;
+  autoJoinPendingRoom?: boolean;
+  joinPendingTitle?: string;
+  joinPendingDescription?: string;
+  onAction?: (action: Record<string, unknown>) => void;
+  onSocketOpen?: () => void;
 }
 
 interface SendActionOptions {
-  showConnectingToast?: boolean
-  connectingTitle?: string
-  connectingDescription?: string
+  showConnectingToast?: boolean;
+  connectingTitle?: string;
+  connectingDescription?: string;
 }
 
 export function useGameRoomSession({
@@ -45,210 +42,186 @@ export function useGameRoomSession({
   room,
   currentUserId,
   autoJoinPendingRoom = true,
-  joinPendingTitle = 'Connecting...',
-  joinPendingDescription = 'Joining the match as soon as the game socket is ready.',
+  joinPendingTitle = "Connecting...",
+  joinPendingDescription = "Joining the match as soon as the game socket is ready.",
   onAction,
   onSocketOpen,
 }: UseGameRoomSessionOptions) {
-  const previousRoomIdRef = useRef<number | null | undefined>(roomId)
-  const onActionRef = useRef(onAction)
-  const onSocketOpenRef = useRef(onSocketOpen)
-  const shouldAutoJoinRef = useRef(false)
-  const hasJoinedRef = useRef(false)
+  const previousRoomIdRef = useRef<number | null | undefined>(roomId);
+  const onActionRef = useRef(onAction);
+  const onSocketOpenRef = useRef(onSocketOpen);
+  const shouldAutoJoinRef = useRef(false);
+  const hasJoinedRef = useRef(false);
 
   useEffect(() => {
-    onActionRef.current = onAction
-  }, [onAction])
+    onActionRef.current = onAction;
+  }, [onAction]);
 
   useEffect(() => {
-    onSocketOpenRef.current = onSocketOpen
-  }, [onSocketOpen])
+    onSocketOpenRef.current = onSocketOpen;
+  }, [onSocketOpen]);
 
-  const wsEnabled = !!roomId && !!token
+  const wsEnabled = !!roomId && !!token;
 
-  const { wsRef, connectionState, reconnect, setPlannedReconnect } =
-    useManagedWebSocket({
-      enabled: wsEnabled,
-      debugLabel: 'game-room-session',
-      createSocket: async () => {
-        if (!roomId) {
-          throw new Error('missing game room id')
-        }
-        return createTicketedWS({
-          path: `/api/ws/game?room_id=${roomId}`,
-        })
-      },
-      onOpen: ws => {
-        onSocketOpenRef.current?.()
+  const { wsRef, connectionState, reconnect, setPlannedReconnect } = useManagedWebSocket({
+    enabled: wsEnabled,
+    debugLabel: "game-room-session",
+    createSocket: async () => {
+      if (!roomId) {
+        throw new Error("missing game room id");
+      }
+      return createTicketedWS({
+        path: `/api/ws/game?room_id=${roomId}`,
+      });
+    },
+    onOpen: (ws) => {
+      onSocketOpenRef.current?.();
 
-        // Recover join intent after reconnect — only if the join
-        // hasn't been sent yet. Re-sending after a successful join
-        // causes "Game already started" errors on every reconnect.
-        if (
-          roomId &&
-          shouldAutoJoinRef.current &&
-          !hasJoinedRef.current &&
-          ws.readyState === WebSocket.OPEN
-        ) {
-          ws.send(
-            JSON.stringify({
-              type: 'join_room',
-              room_id: roomId,
-            })
-          )
-          hasJoinedRef.current = true
-          shouldAutoJoinRef.current = false
-        }
-      },
-      onMessage: (_ws, event) => {
-        try {
-          const action = JSON.parse(event.data) as Record<string, unknown>
-          onActionRef.current?.(action)
-        } catch (error) {
-          console.error('Failed to parse game socket message:', error)
-        }
-      },
-      onError: ws => {
-        if (
-          ws.readyState === WebSocket.OPEN ||
-          ws.readyState === WebSocket.CONNECTING
-        ) {
-          console.warn(
-            '[game-room-session] onError closing websocket (OPEN/CONNECTING)'
-          )
-          ws.close()
-        }
-      },
-      reconnectDelaysMs: DEFAULT_RECONNECT_DELAYS,
-    })
+      // Recover join intent after reconnect — only if the join
+      // hasn't been sent yet. Re-sending after a successful join
+      // causes "Game already started" errors on every reconnect.
+      if (
+        roomId &&
+        shouldAutoJoinRef.current &&
+        !hasJoinedRef.current &&
+        ws.readyState === WebSocket.OPEN
+      ) {
+        ws.send(
+          JSON.stringify({
+            type: "join_room",
+            room_id: roomId,
+          }),
+        );
+        hasJoinedRef.current = true;
+        shouldAutoJoinRef.current = false;
+      }
+    },
+    onMessage: (_ws, event) => {
+      try {
+        const action = JSON.parse(event.data) as Record<string, unknown>;
+        onActionRef.current?.(action);
+      } catch (error) {
+        console.error("Failed to parse game socket message:", error);
+      }
+    },
+    onError: (ws) => {
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        console.warn("[game-room-session] onError closing websocket (OPEN/CONNECTING)");
+        ws.close();
+      }
+    },
+    reconnectDelaysMs: DEFAULT_RECONNECT_DELAYS,
+  });
 
   // When roomId changes (e.g. "Play Again" navigates to a new room),
   // reset join tracking and reconnect the WebSocket so it points at the
   // new room's endpoint.  Without this the old socket stays open on the
   // previous room and auto-join for the new room is silently skipped.
   useEffect(() => {
-    const prevId = previousRoomIdRef.current
-    previousRoomIdRef.current = roomId
+    const prevId = previousRoomIdRef.current;
+    previousRoomIdRef.current = roomId;
 
     if (prevId != null && roomId != null && prevId !== roomId) {
-      hasJoinedRef.current = false
-      shouldAutoJoinRef.current = false
-      setPlannedReconnect(true)
-      reconnect(true)
+      hasJoinedRef.current = false;
+      shouldAutoJoinRef.current = false;
+      setPlannedReconnect(true);
+      reconnect(true);
     }
-  }, [roomId, reconnect, setPlannedReconnect])
+  }, [roomId, reconnect, setPlannedReconnect]);
 
-  const isSocketReady = connectionState === 'connected'
+  const isSocketReady = connectionState === "connected";
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: mutable wsRef.current is read intentionally at call time
   const sendJoinNow = useCallback(() => {
-    if (
-      !roomId ||
-      !wsRef.current ||
-      wsRef.current.readyState !== WebSocket.OPEN
-    ) {
-      return false
+    if (!roomId || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      return false;
     }
 
     wsRef.current.send(
       JSON.stringify({
-        type: 'join_room',
+        type: "join_room",
         room_id: roomId,
-      })
-    )
-    hasJoinedRef.current = true
-    shouldAutoJoinRef.current = false
-    return true
-  }, [roomId])
+      }),
+    );
+    hasJoinedRef.current = true;
+    shouldAutoJoinRef.current = false;
+    return true;
+  }, [roomId]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: mutable wsRef.current is read intentionally at call time
   const sendAction = useCallback(
     (action: GameSocketAction, options?: SendActionOptions) => {
-      const showConnectingToast = options?.showConnectingToast ?? true
-      const connectingTitle = options?.connectingTitle ?? 'Connecting...'
+      const showConnectingToast = options?.showConnectingToast ?? true;
+      const connectingTitle = options?.connectingTitle ?? "Connecting...";
       const connectingDescription =
         options?.connectingDescription ??
-        'Game socket is not ready yet. Please try again in a second.'
+        "Game socket is not ready yet. Please try again in a second.";
 
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
         if (showConnectingToast) {
           toast.error(connectingTitle, {
             description: connectingDescription,
-          })
+          });
         }
-        return false
+        return false;
       }
 
       const message = {
         ...action,
         room_id: action.room_id ?? roomId,
-      }
-      wsRef.current.send(JSON.stringify(message))
-      return true
+      };
+      wsRef.current.send(JSON.stringify(message));
+      return true;
     },
-    [roomId]
-  )
+    [roomId],
+  );
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: mutable wsRef.current is read intentionally at call time
   const joinRoom = useCallback(() => {
-    if (!roomId) return false
+    if (!roomId) return false;
 
-    if (
-      !isSocketReady ||
-      !wsRef.current ||
-      wsRef.current.readyState !== WebSocket.OPEN
-    ) {
-      shouldAutoJoinRef.current = true
+    if (!isSocketReady || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      shouldAutoJoinRef.current = true;
       toast.message(joinPendingTitle, {
         description: joinPendingDescription,
-      })
-      return false
+      });
+      return false;
     }
 
-    if (hasJoinedRef.current) return true
-    return sendJoinNow()
-  }, [
-    isSocketReady,
-    joinPendingDescription,
-    joinPendingTitle,
-    roomId,
-    sendJoinNow,
-  ])
+    if (hasJoinedRef.current) return true;
+    return sendJoinNow();
+  }, [isSocketReady, joinPendingDescription, joinPendingTitle, roomId, sendJoinNow]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: mutable wsRef.current is read intentionally at call time
   useEffect(() => {
     if (!autoJoinPendingRoom || !room || !currentUserId) {
-      shouldAutoJoinRef.current = false
-      return
+      shouldAutoJoinRef.current = false;
+      return;
     }
 
-    if (
-      room.status === 'pending' &&
-      room.creator_id !== currentUserId &&
-      !hasJoinedRef.current
-    ) {
-      shouldAutoJoinRef.current = true
+    if (room.status === "pending" && room.creator_id !== currentUserId && !hasJoinedRef.current) {
+      shouldAutoJoinRef.current = true;
       if (wsRef.current?.readyState === WebSocket.OPEN) {
-        sendJoinNow()
+        sendJoinNow();
       }
-      return
+      return;
     }
 
-    shouldAutoJoinRef.current = false
-  }, [autoJoinPendingRoom, room, currentUserId, sendJoinNow])
+    shouldAutoJoinRef.current = false;
+  }, [autoJoinPendingRoom, room, currentUserId, sendJoinNow]);
 
   useTokenRefreshReconnect({
     token,
     wsEnabled,
     reconnect,
     setPlannedReconnect,
-    debugLabel: 'game-room-session',
-  })
+    debugLabel: "game-room-session",
+  });
 
   return {
     isSocketReady,
     sendAction,
     joinRoom,
     wsRef,
-  }
+  };
 }
