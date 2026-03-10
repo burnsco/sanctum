@@ -1,0 +1,16 @@
+{
+  "name": "Sanctum",
+  "short_name": "Sanctum",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#0c1624",
+  "background_color": "#0c1624",
+  "display": "standalone",
+  "start_url": "/"
+}
