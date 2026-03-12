@@ -26,6 +26,7 @@ COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ .
 RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o /app/main ./cmd/server && \
+    CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o /app/seed ./cmd/seed && \
     mkdir -p /tmp/sanctum/uploads && \
     chmod -R 0775 /tmp/sanctum
 
@@ -36,6 +37,7 @@ RUN apk add --no-cache libwebp ca-certificates && \
 
 WORKDIR /
 COPY --from=build /app/main .
+COPY --from=build /app/seed .
 COPY --from=build /app/backend/*.yml ./
 COPY --from=build --chown=nonroot:nonroot /tmp/sanctum /tmp/sanctum
 

@@ -15,7 +15,7 @@ if [ -f .env ]; then
 fi
 
 DB_HOST="${DB_HOST:-localhost}"
-DB_PORT="${DB_PORT:-5432}"
+DB_PORT="${DB_PORT:-${POSTGRES_PORT:-5434}}"
 DB_USER="${DB_USER:-${POSTGRES_USER:-sanctum_user}}"
 DB_PASSWORD="${DB_PASSWORD:-${POSTGRES_PASSWORD:-sanctum_password}}"
 DB_NAME="${DB_NAME:-${POSTGRES_DB:-sanctum}}"

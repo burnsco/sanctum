@@ -114,6 +114,36 @@ make seed-realistic
 cd backend && go run cmd/seed/main.go -preset Realistic
 ```
 
+### Run Seeder Through Docker
+
+For containerized workflows, use the Make targets from the repo root.
+
+Local/dev app container:
+
+```bash
+# Destructive: clears seedable app data first
+make seed-realistic-docker
+
+# Additive: keeps existing rows and appends realistic users/posts/comments
+make seed-realistic-docker-append
+```
+
+Production image path:
+
+```bash
+# Uses the compiled /seed binary baked into the production image
+make seed-realistic-image
+
+# Additive variant for an existing database
+make seed-realistic-image-append
+```
+
+If you want the production image path locally before deploying, run:
+
+```bash
+APP_ENV=development make seed-realistic-image
+```
+
 Validate seed distribution (requires `psql` and `DATABASE_URL` env var):
 
 ```bash
@@ -122,13 +152,18 @@ DATABASE_URL=postgres://user:pass@localhost:5432/sanctum scripts/validate_seed.s
 
 ### Clear and Re-seed
 
-The seeder automatically clears existing data before seeding. If you want to keep existing data, modify `backend/seed/seed.go`:
+The seeder automatically clears existing data before seeding because `-clean`
+defaults to `true`.
 
-```go
-// Comment out this line in the Seed function:
-// if err := clearData(db); err != nil {
-//     return fmt.Errorf("failed to clear data: %w", err)
-// }
+To keep existing data, pass `-clean=false`:
+
+```bash
+cd backend
+go run cmd/seed/main.go -preset Realistic -clean=false
+
+# or through Make
+make seed-realistic-docker-append
+make seed-realistic-image-append
 ```
 
 ### Customize Seed Data
@@ -248,11 +283,14 @@ func SeedStaging(db *gorm.DB) {
 }
 ```
 
-### Production (Never)
+### Production (Manual / Intentional Only)
 
-- Don't seed production!
-- Use migrations instead
-- Real data only
+- Prefer real data and migrations for normal production operation
+- If you intentionally seed a non-critical deployed environment, use the image-based target:
+  `make seed-realistic-image`
+- For additive seeding without clearing, use:
+  `make seed-realistic-image-append`
+- Verify config/env first; the production image path depends on the deployed app image and DB settings
 
 ## Troubleshooting
 

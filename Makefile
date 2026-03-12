@@ -3,6 +3,7 @@ GO ?= go
 DOCKER_COMPOSE ?= ./scripts/compose.sh
 BUN ?= bun
 K6_DOCKER_IMAGE ?= grafana/k6:0.49.0
+SEED_ARGS ?=
 
 # Environment Orchestration
 ENVIRONMENT ?= dev
@@ -29,7 +30,7 @@ YELLOW := \033[1;33m
 RED := \033[1;31m
 NC := \033[0m # No Color
 
-.PHONY: help setup-local bootstrap dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend lint-frontend-fix type-check-frontend check-frontend install-githooks verify-githooks install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed seed-realistic db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-install-backend-local deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index ai-memory-backfill ai-memory-update ai-memory-validate ai-docs-verify openapi-check
+.PHONY: help setup-local bootstrap dev dev-build dev-clean dev-backend dev-frontend dev-both build build-backend build-frontend up down recreate recreate-frontend recreate-backend logs logs-backend logs-frontend logs-all fmt fmt-frontend lint lint-frontend lint-frontend-fix type-check-frontend check-frontend install-githooks verify-githooks install env restart check-versions versions-check clean test test-api test-backend-integration test-frontend test-up test-down test-backend seed seed-realistic seed-docker seed-realistic-docker seed-realistic-docker-append seed-image seed-realistic-image seed-realistic-image-append db-migrate db-migrate-up db-migrate-auto db-schema-status db-reset-dev deps-install-backend-local deps-update deps-update-backend deps-update-frontend deps-tidy deps-check deps-vuln deps-audit deps-freshness monitor-up monitor-down monitor-logs monitor-config monitor-lite-up monitor-lite-down config-sanity stress-stack-up stress-stack-down stress-low stress-medium stress-high stress-extreme stress-insane stress-all ai-report stress-ai-low stress-ai-medium stress-ai-high stress-ai-extreme stress-ai-insane stress-index ai-memory-backfill ai-memory-update ai-memory-validate ai-docs-verify openapi-check
 
 # Default target
 help:
@@ -108,6 +109,12 @@ help:
 	@echo "$(GREEN)Database:$(NC)"
 	@echo "  make seed               - 🌱 Seed database with test data"
 	@echo "  make seed-realistic     - 🌱 Seed with ~10 realistic posts per sanctum"
+	@echo "  make seed-docker        - 🌱 Seed via Docker dev app container"
+	@echo "  make seed-realistic-docker - 🌱 Realistic seed via Docker dev app container"
+	@echo "  make seed-realistic-docker-append - 🌱 Append realistic seed via Docker dev app container"
+	@echo "  make seed-image         - 🌱 Seed via Docker production image (/seed binary)"
+	@echo "  make seed-realistic-image - 🌱 Realistic seed via Docker production image"
+	@echo "  make seed-realistic-image-append - 🌱 Append realistic seed via Docker production image"
 	@echo "  make db-migrate         - 🧭 Apply SQL migrations (Docker)"
 	@echo "  make db-migrate-auto    - 🧭 Run AutoMigrate mode (explicit)"
 	@echo "  make db-schema-status   - 🧭 Show schema mode and migration status (Docker)"
@@ -731,7 +738,7 @@ test-e2e-container: build-playwright-image test-e2e-up
 	@docker run --rm --network host \
 		-e PLAYWRIGHT_BASE_URL=http://localhost:5173 \
 		-e PLAYWRIGHT_API_URL=http://localhost:8375/api \
-		                -e DB_HOST=localhost -e DB_PORT=5432 -e DB_USER=${POSTGRES_USER:-sanctum_user} \
+		                -e DB_HOST=localhost -e DB_PORT=${POSTGRES_PORT:-5434} -e DB_USER=${POSTGRES_USER:-sanctum_user} \
 		                -e DB_PASSWORD=${POSTGRES_PASSWORD:-sanctum_password} -e DB_NAME=${POSTGRES_DB:-sanctum_test} \
 		
 		sanctum/playwright:local npx playwright test --grep @smoke --workers=2
@@ -760,6 +767,36 @@ seed-realistic:
 	cd backend && $(GO) run cmd/seed/main.go -preset Realistic
 	@echo "$(GREEN)✓ Realistic seed completed!$(NC)"
 	@echo "$(YELLOW)📧 Test users password: password123$(NC)"
+
+# Seed via the Docker dev app container (go toolchain available via dev image).
+seed-docker:
+	@echo "$(BLUE)Seeding database via Docker dev app container...$(NC)"
+	$(DOCKER_COMPOSE) -f compose.yml -f compose.override.yml build app
+	$(DOCKER_COMPOSE) -f compose.yml up -d postgres redis
+	$(DOCKER_COMPOSE) -f compose.yml -f compose.override.yml run --rm --no-deps --entrypoint sh app -lc "cd /app/backend && /usr/local/go/bin/go run ./cmd/seed/main.go $(SEED_ARGS)"
+	@echo "$(GREEN)✓ Docker dev seed completed!$(NC)"
+	@echo "$(YELLOW)📧 Test users password: password123$(NC)"
+
+seed-realistic-docker:
+	@$(MAKE) seed-docker SEED_ARGS="-preset Realistic"
+
+seed-realistic-docker-append:
+	@$(MAKE) seed-docker SEED_ARGS="-preset Realistic -clean=false"
+
+# Seed via the production image seeder binary copied into /seed.
+seed-image:
+	@echo "$(BLUE)Seeding database via Docker production image...$(NC)"
+	$(DOCKER_COMPOSE) -f compose.yml build app
+	$(DOCKER_COMPOSE) -f compose.yml up -d postgres redis
+	$(DOCKER_COMPOSE) -f compose.yml run --rm --no-deps --entrypoint /seed app $(SEED_ARGS)
+	@echo "$(GREEN)✓ Docker image seed completed!$(NC)"
+	@echo "$(YELLOW)📧 Test users password: password123$(NC)"
+
+seed-realistic-image:
+	@$(MAKE) seed-image SEED_ARGS="-preset Realistic"
+
+seed-realistic-image-append:
+	@$(MAKE) seed-image SEED_ARGS="-preset Realistic -clean=false"
 
 db-migrate:
 	@echo "$(BLUE)Applying SQL migrations inside Docker app container...$(NC)"
@@ -923,7 +960,7 @@ perf-e2e:
 	PLAYWRIGHT_BASE_URL=$${PLAYWRIGHT_BASE_URL:-http://localhost:5173} \
 	PLAYWRIGHT_API_URL=$${PLAYWRIGHT_API_URL:-http://localhost:8375/api} \
 	PGHOST=$${PGHOST:-localhost} \
-	PGPORT=$${PGPORT:-5432} \
+	PGPORT=$${PGPORT:-$${POSTGRES_PORT:-5434}} \
 	PERF_TEST_ONLY=true \
 	cd frontend && bun run test:e2e -- --grep "@preprod"
 
@@ -932,6 +969,6 @@ perf-e2e-local:
 	PLAYWRIGHT_BASE_URL=$${PLAYWRIGHT_BASE_URL:-http://localhost:5173} \
 	PLAYWRIGHT_API_URL=$${PLAYWRIGHT_API_URL:-http://localhost:8375/api} \
 	PGHOST=$${PGHOST:-localhost} \
-	PGPORT=$${PGPORT:-5432} \
+	PGPORT=$${PGPORT:-$${POSTGRES_PORT:-5434}} \
 	PERF_TEST_ONLY=true \
 	cd frontend && bun run test:e2e -- --grep "@preprod"

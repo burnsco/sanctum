@@ -19,7 +19,7 @@ services:
 
   postgres:
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5434}:5432"
     healthcheck:
       interval: 2s
       timeout: 3s
