@@ -304,18 +304,18 @@ install-linter:
 	@echo "$(GREEN)✓ golangci-lint installed (ensure $HOME/go/bin is in your PATH)$(NC)"
 
 fmt-frontend:
-	@echo "$(BLUE)Formatting frontend code with Biome...$(NC)"
-	cd frontend && $(BUN) --bun biome format --write .
+	@echo "$(BLUE)Formatting frontend code with oxfmt...$(NC)"
+	cd frontend && $(BUN) run format:write
 	@echo "$(GREEN)✓ Frontend code formatted$(NC)"
 
 lint-frontend:
-	@echo "$(BLUE)Linting frontend code with Biome...$(NC)"
-	cd frontend && $(BUN) --bun biome check src
+	@echo "$(BLUE)Linting frontend code with oxlint...$(NC)"
+	cd frontend && $(BUN) run lint
 	@echo "$(GREEN)✓ Frontend linting passed$(NC)"
 
 lint-frontend-fix:
-	@echo "$(BLUE)Fixing frontend code with Biome...$(NC)"
-	cd frontend && $(BUN) --bun biome check --write src
+	@echo "$(BLUE)Fixing frontend code with oxlint...$(NC)"
+	cd frontend && $(BUN) run lint:fix
 	@echo "$(GREEN)✓ Frontend lint/format fixes applied$(NC)"
 
 type-check-frontend:
