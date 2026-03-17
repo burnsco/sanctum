@@ -35,7 +35,7 @@
     "@tanstack/react-form": "^1.28.5",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-query-devtools": "^5.91.3",
-    "@tanstack/react-virtual": "^3.13.22",
+    "@tanstack/react-virtual": "^3.13.23",
     "date-fns": "^4.1.0",
     "hls.js": "^1.6.15",
     "lucide-react": "^0.577.0",
@@ -49,7 +49,7 @@
     "sonner": "^2.0.7",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.3.6",
-    "zustand": "^5.0.11"
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
@@ -60,21 +60,21 @@
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^5.2.0",
+    "@vitejs/plugin-react": "^6.0.1",
     "@vitest/coverage-v8": "^4.1.0",
     "autoprefixer": "^10.4.27",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "jsdom": "^28.1.0",
-    "msw": "^2.12.10",
-    "oxfmt": "^0.37.0",
-    "oxlint": "^1.55.0",
+    "jsdom": "^29.0.0",
+    "msw": "^2.12.13",
+    "oxfmt": "^0.41.0",
+    "oxlint": "^1.56.0",
     "pg": "^8.20.0",
     "postcss": "^8.5.8",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1",
+    "vite": "^8.0.0",
     "vitest": "^4.1.0"
   }
 }
