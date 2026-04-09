@@ -15,9 +15,10 @@ const (
 	PostsListVersionKey     = "posts:list:version"
 	SanctumKeyPrefix        = "sanctum:%s"
 	RoomKeyPrefix           = "room:%d"
-	ChatroomsAllKey         = "chatrooms:all"
+	ChatroomsAllKey         = "chatrooms:all:public-sanctum:v2"
 	ChatroomsVersionKey     = "chatrooms:version"
-	MessageHistoryPrefix    = "room:%d:messages"
+	MessageHistoryKeyPrefix = "room:%d:messages:v%d:limit:%d:offset:%d"
+	MessageHistoryVersion   = "room:%d:messages:version"
 )
 
 // Cache TTLs
@@ -66,9 +67,15 @@ func RoomKey(roomID uint) string {
 	return fmt.Sprintf(RoomKeyPrefix, roomID)
 }
 
-// MessageHistoryKey returns the cache key for a room's message history.
-func MessageHistoryKey(roomID uint) string {
-	return fmt.Sprintf(MessageHistoryPrefix, roomID)
+// MessageHistoryVersionKey returns the version key for a room's message history cache.
+func MessageHistoryVersionKey(roomID uint) string {
+	return fmt.Sprintf(MessageHistoryVersion, roomID)
+}
+
+// MessageHistoryKey returns the versioned cache key for a room's paginated message history.
+func MessageHistoryKey(ctx context.Context, roomID uint, limit, offset int) string {
+	version := GetVersion(ctx, MessageHistoryVersionKey(roomID))
+	return fmt.Sprintf(MessageHistoryKeyPrefix, roomID, version, limit, offset)
 }
 
 // GetVersion returns the current version number for a versioned cache key.
@@ -103,7 +110,7 @@ func InvalidateUser(ctx context.Context, userID uint) {
 // InvalidateRoom invalidates all cache entries related to a chat room.
 func InvalidateRoom(ctx context.Context, roomID uint) {
 	Invalidate(ctx, RoomKey(roomID))
-	Invalidate(ctx, MessageHistoryKey(roomID))
+	BumpVersion(ctx, MessageHistoryVersionKey(roomID))
 	BumpVersion(ctx, ChatroomsVersionKey)
 }
 

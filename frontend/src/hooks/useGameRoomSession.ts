@@ -187,14 +187,7 @@ export function useGameRoomSession({
 
     if (hasJoinedRef.current) return true;
     return sendJoinNow();
-  }, [
-    isSocketReady,
-    joinPendingDescription,
-    joinPendingTitle,
-    roomId,
-    sendJoinNow,
-    wsRef,
-  ]);
+  }, [isSocketReady, joinPendingDescription, joinPendingTitle, roomId, sendJoinNow, wsRef]);
 
   useEffect(() => {
     if (!autoJoinPendingRoom || !room || !currentUserId) {

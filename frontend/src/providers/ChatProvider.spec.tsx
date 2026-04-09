@@ -35,10 +35,14 @@ function HookTest({ cb }: { cb: (ctx: ReturnType<typeof useChatContext>) => void
 class MockWebSocket {
   static instances: MockWebSocket[] = [];
   static nextShouldClose = false;
-  onopen: (() => void) | null = null;
-  onmessage: ((ev: { data: string }) => void) | null = null;
-  onclose: (() => void) | null = null;
-  onerror: ((e: unknown) => void) | null = null;
+  onopen: ((event: Event) => void) | null = null;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onclose: ((event: CloseEvent) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
+  private openListeners = new Set<(event: Event) => void>();
+  private messageListeners = new Set<(event: MessageEvent) => void>();
+  private errorListeners = new Set<(event: Event) => void>();
+  private closeListeners = new Set<(event: CloseEvent) => void>();
   readyState = 0;
   url: string;
 
@@ -47,28 +51,77 @@ class MockWebSocket {
     MockWebSocket.instances.push(this);
   }
 
+  addEventListener(
+    type: string,
+    listener: ((event: Event | MessageEvent | CloseEvent) => void) | null,
+  ) {
+    if (!listener) {
+      return;
+    }
+    switch (type) {
+      case "open":
+        this.openListeners.add(listener as (event: Event) => void);
+        break;
+      case "message":
+        this.messageListeners.add(listener as (event: MessageEvent) => void);
+        break;
+      case "error":
+        this.errorListeners.add(listener as (event: Event) => void);
+        break;
+      case "close":
+        this.closeListeners.add(listener as (event: CloseEvent) => void);
+        break;
+    }
+  }
+
+  private emitOpen(event: Event) {
+    this.onopen?.(event);
+    for (const listener of this.openListeners) {
+      listener(event);
+    }
+  }
+
+  private emitMessage(event: MessageEvent) {
+    this.onmessage?.(event);
+    for (const listener of this.messageListeners) {
+      listener(event);
+    }
+  }
+
+  private emitClose(event: CloseEvent) {
+    this.onclose?.(event);
+    for (const listener of this.closeListeners) {
+      listener(event);
+    }
+  }
+
   /** Run deferred open (or close if nextShouldClose). Call inside act(). */
   flushConnect() {
     if (MockWebSocket.nextShouldClose) {
       MockWebSocket.nextShouldClose = false;
       this.readyState = 3;
-      this.onclose?.();
+      this.emitClose(new Event("close") as CloseEvent);
       return;
     }
     this.readyState = 1;
-    this.onopen?.();
+    this.emitOpen(new Event("open"));
+    this.emitMessage(
+      new MessageEvent("message", {
+        data: JSON.stringify({ type: "connected" }),
+      }),
+    );
   }
 
   send(_data: string) {}
   close() {
     this.readyState = 3;
-    this.onclose?.();
+    this.emitClose(new Event("close") as CloseEvent);
   }
 
   /** Simulate inbound server message. Call inside act(). */
   receive(obj: unknown) {
     const data = typeof obj === "string" ? obj : JSON.stringify(obj);
-    this.onmessage?.({ data });
+    this.emitMessage(new MessageEvent("message", { data }));
   }
 }
 

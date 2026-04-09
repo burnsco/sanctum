@@ -47,6 +47,8 @@ export default function UserProfile() {
     return userPosts.reduce((sum, post) => sum + (post.likes_count || 0), 0);
   }, [userPosts]);
 
+  const sharedEmail = user?.email?.trim();
+
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
@@ -90,7 +92,9 @@ export default function UserProfile() {
 
                 <div className="space-y-1">
                   <h1 className="text-2xl font-bold">{user.username}</h1>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                  {sharedEmail ? (
+                    <p className="text-sm text-muted-foreground">{sharedEmail}</p>
+                  ) : null}
 
                   <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />

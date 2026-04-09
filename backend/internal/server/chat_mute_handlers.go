@@ -37,6 +37,7 @@ func (s *Server) ListChatroomMutes(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedChatroomMutes(mutes)
 	return c.JSON(mutes)
 }
 

@@ -23,6 +23,7 @@ func (s *Server) SearchPosts(c *fiber.Ctx) error {
 		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
+	sanitizeSharedPosts(posts)
 	return c.JSON(posts)
 }
 
@@ -67,6 +68,7 @@ func (s *Server) CreatePost(c *fiber.Ctx) error {
 		"created_at": time.Now().UTC().Format(time.RFC3339Nano),
 	})
 
+	sanitizeSharedPost(post)
 	return c.Status(fiber.StatusCreated).JSON(post)
 }
 
@@ -103,6 +105,7 @@ func (s *Server) GetPosts(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedPosts(posts)
 	return c.JSON(posts)
 }
 
@@ -120,6 +123,7 @@ func (s *Server) GetPost(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
 
+	sanitizeSharedPost(post)
 	return c.JSON(post)
 }
 
@@ -139,6 +143,7 @@ func (s *Server) GetUserPosts(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedPosts(posts)
 	return c.JSON(posts)
 }
 
@@ -177,6 +182,7 @@ func (s *Server) UpdatePost(c *fiber.Ctx) error {
 		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
+	sanitizeSharedPost(post)
 	return c.JSON(post)
 }
 
@@ -221,6 +227,7 @@ func (s *Server) LikePost(c *fiber.Ctx) error {
 		"updated_at":     time.Now().UTC().Format(time.RFC3339Nano),
 	})
 
+	sanitizeSharedPost(post)
 	return c.JSON(post)
 }
 
@@ -245,6 +252,7 @@ func (s *Server) UnlikePost(c *fiber.Ctx) error {
 		"updated_at":     time.Now().UTC().Format(time.RFC3339Nano),
 	})
 
+	sanitizeSharedPost(post)
 	return c.JSON(post)
 }
 
@@ -274,6 +282,7 @@ func (s *Server) VotePoll(c *fiber.Ctx) error {
 		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
+	sanitizeSharedPost(post)
 	return c.JSON(post)
 }
 

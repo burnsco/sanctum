@@ -8,21 +8,89 @@ class MockSocket {
   onmessage: ((event: MessageEvent) => void) | null = null;
   onerror: ((event: Event) => void) | null = null;
   onclose: ((event: CloseEvent) => void) | null = null;
+  private openListeners = new Set<(event: Event) => void>();
+  private messageListeners = new Set<(event: MessageEvent) => void>();
+  private errorListeners = new Set<(event: Event) => void>();
+  private closeListeners = new Set<(event: CloseEvent) => void>();
   send = vi.fn();
+
+  addEventListener(
+    type: string,
+    listener: ((event: Event | MessageEvent | CloseEvent) => void) | null,
+  ) {
+    if (!listener) {
+      return;
+    }
+    switch (type) {
+      case "open":
+        this.openListeners.add(listener as (event: Event) => void);
+        break;
+      case "message":
+        this.messageListeners.add(listener as (event: MessageEvent) => void);
+        break;
+      case "error":
+        this.errorListeners.add(listener as (event: Event) => void);
+        break;
+      case "close":
+        this.closeListeners.add(listener as (event: CloseEvent) => void);
+        break;
+    }
+  }
+
+  private emitOpen(event: Event) {
+    this.onopen?.(event);
+    for (const listener of this.openListeners) {
+      listener(event);
+    }
+  }
+
+  private emitMessage(event: MessageEvent) {
+    this.onmessage?.(event);
+    for (const listener of this.messageListeners) {
+      listener(event);
+    }
+  }
+
+  private emitError(event: Event) {
+    this.onerror?.(event);
+    for (const listener of this.errorListeners) {
+      listener(event);
+    }
+  }
+
+  private emitClose(event: CloseEvent) {
+    this.onclose?.(event);
+    for (const listener of this.closeListeners) {
+      listener(event);
+    }
+  }
 
   close = vi.fn(() => {
     this.readyState = 3;
-    this.onclose?.(new Event("close") as CloseEvent);
+    this.emitClose(new Event("close") as CloseEvent);
   });
 
   triggerOpen() {
     this.readyState = 1;
-    this.onopen?.(new Event("open"));
+    this.emitOpen(new Event("open"));
+    this.emitMessage(
+      new MessageEvent("message", {
+        data: JSON.stringify({ type: "connected" }),
+      }),
+    );
   }
 
   triggerClose() {
     this.readyState = 3;
-    this.onclose?.(new Event("close") as CloseEvent);
+    this.emitClose(new Event("close") as CloseEvent);
+  }
+
+  receive(data: unknown) {
+    this.emitMessage(
+      new MessageEvent("message", {
+        data: typeof data === "string" ? data : JSON.stringify(data),
+      }),
+    );
   }
 }
 
@@ -184,13 +252,10 @@ describe("useManagedWebSocket", () => {
       await Promise.resolve();
       socket.triggerOpen();
     });
+    onMessage.mockClear();
 
     await act(async () => {
-      socket.onmessage?.(
-        new MessageEvent("message", {
-          data: JSON.stringify({ type: "PING" }),
-        }),
-      );
+      socket.receive({ type: "PING" });
     });
 
     expect(socket.send).toHaveBeenCalledWith(JSON.stringify({ type: "PONG" }));

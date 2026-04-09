@@ -41,72 +41,76 @@ export function FriendList() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {friends.map((friend) => (
-        <Card key={friend.id}>
-          <CardHeader className="flex flex-row items-center gap-4 pb-2">
-            <Avatar className="h-10 w-10 border border-border/60">
-              <AvatarImage
-                src={friend.avatar || getAvatarUrl(friend.username)}
-                alt={friend.username}
-              />
-              <AvatarFallback>{friend.username[0].toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 overflow-hidden">
-              <CardTitle className="text-base truncate">{friend.username}</CardTitle>
-              <CardDescription className="truncate text-xs">
-                {onlineUserIds.has(friend.id) ? (
-                  "Online now"
-                ) : (
+      {friends.map((friend) => {
+        const isOnline = onlineUserIds.has(friend.id);
+        const sharedEmail = friend.email?.trim();
+        const subtitle = isOnline ? "Online now" : (sharedEmail ?? "") || "Offline";
+
+        return (
+          <Card key={friend.id}>
+            <CardHeader className="flex flex-row items-center gap-4 pb-2">
+              <Avatar className="h-10 w-10 border border-border/60">
+                <AvatarImage
+                  src={friend.avatar || getAvatarUrl(friend.username)}
+                  alt={friend.username}
+                />
+                <AvatarFallback>{friend.username[0].toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1 overflow-hidden">
+                <CardTitle className="text-base truncate">{friend.username}</CardTitle>
+                <CardDescription className="text-xs">
                   <span className="flex items-center gap-2">
-                    <span className="truncate">{friend.email}</span>
-                    <button
-                      type="button"
-                      className="text-[11px] inline-flex items-center gap-1 rounded px-2 py-0.5 bg-muted/60 hover:bg-muted"
-                      onClick={() => {
-                        const url = `${window.location.origin}/users/${friend.id}`;
-                        void navigator.clipboard.writeText(url);
-                        toast.success("Profile URL copied");
-                      }}
-                    >
-                      <LinkIcon className="w-3 h-3" />
-                      <span>Share</span>
-                    </button>
+                    <span className="truncate">{subtitle}</span>
+                    {!isOnline ? (
+                      <button
+                        type="button"
+                        className="text-[11px] inline-flex items-center gap-1 rounded px-2 py-0.5 bg-muted/60 hover:bg-muted"
+                        onClick={() => {
+                          const url = `${window.location.origin}/users/${friend.id}`;
+                          void navigator.clipboard.writeText(url);
+                          toast.success("Profile URL copied");
+                        }}
+                      >
+                        <LinkIcon className="w-3 h-3" />
+                        <span>Share</span>
+                      </button>
+                    ) : null}
                   </span>
-                )}
-              </CardDescription>
-            </div>
-            <span
-              className={`h-2.5 w-2.5 rounded-full ${onlineUserIds.has(friend.id) ? "bg-emerald-500" : "bg-gray-400"}`}
-              title={onlineUserIds.has(friend.id) ? "Online" : "Offline"}
-            />
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2 mt-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                className="flex-1"
-                onClick={() => handleMessage(friend.id)}
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Message
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={() => {
-                  if (confirm(`Remove ${friend.username} from friends?`)) {
-                    removeFriend.mutate(friend.id);
-                  }
-                }}
-              >
-                <UserX className="w-4 h-4" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                </CardDescription>
+              </div>
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${isOnline ? "bg-emerald-500" : "bg-gray-400"}`}
+                title={isOnline ? "Online" : "Offline"}
+              />
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => handleMessage(friend.id)}
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Message
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => {
+                    if (confirm(`Remove ${friend.username} from friends?`)) {
+                      removeFriend.mutate(friend.id);
+                    }
+                  }}
+                >
+                  <UserX className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }

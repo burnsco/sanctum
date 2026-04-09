@@ -47,6 +47,7 @@ func (s *Server) SendFriendRequest(c *fiber.Ctx) error {
 		"created_at": time.Now().UTC().Format(time.RFC3339Nano),
 	})
 
+	sanitizeSharedFriendship(friendship)
 	return c.Status(fiber.StatusCreated).JSON(friendship)
 }
 
@@ -60,6 +61,7 @@ func (s *Server) GetPendingRequests(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedFriendships(requests)
 	return c.JSON(requests)
 }
 
@@ -73,6 +75,7 @@ func (s *Server) GetSentRequests(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedFriendships(requests)
 	return c.JSON(requests)
 }
 
@@ -106,6 +109,7 @@ func (s *Server) AcceptFriendRequest(c *fiber.Ctx) error {
 		"created_at":  time.Now().UTC().Format(time.RFC3339Nano),
 	})
 
+	sanitizeSharedFriendship(friendship)
 	return c.JSON(friendship)
 }
 
@@ -156,6 +160,7 @@ func (s *Server) GetFriends(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedUsers(friends)
 	return c.JSON(friends)
 }
 
@@ -173,6 +178,7 @@ func (s *Server) GetFriendshipStatus(c *fiber.Ctx) error {
 		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
+	sanitizeSharedFriendship(friendship)
 	return c.JSON(fiber.Map{
 		"status":     status,
 		"request_id": requestID,

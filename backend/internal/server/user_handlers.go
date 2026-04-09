@@ -26,6 +26,7 @@ func (s *Server) SearchUsers(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedUsers(users)
 	return c.JSON(users)
 }
 
@@ -47,6 +48,7 @@ func (s *Server) GetAllUsers(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedUsers(users)
 	return c.JSON(users)
 }
 
@@ -62,6 +64,7 @@ func (s *Server) GetUserProfile(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
 
+	sanitizeSharedUser(user)
 	return c.JSON(user)
 }
 

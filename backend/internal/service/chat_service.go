@@ -298,14 +298,18 @@ func (s *ChatService) LeaveConversation(ctx context.Context, convID, userID uint
 	return conv, nil
 }
 
-// GetAllChatrooms returns all group chatrooms with joined status for the user.
+func isPublicChatroomConversation(conversation *models.Conversation) bool {
+	return conversation != nil && conversation.IsGroup && conversation.SanctumID != nil
+}
+
+// GetAllChatrooms returns all public sanctum-backed chatrooms with joined status for the user.
 func (s *ChatService) GetAllChatrooms(ctx context.Context, userID uint) ([]ChatroomWithJoined, error) {
 	var chatrooms []*models.Conversation
 	key := cache.ChatroomsAllKeyWithVersion(ctx)
 
 	err := cache.Aside(ctx, key, &chatrooms, cache.ListTTL, func() error {
 		return s.db.WithContext(ctx).
-			Where("is_group = ?", true).
+			Where("is_group = ? AND sanctum_id IS NOT NULL", true).
 			Preload("Participants").
 			Preload("Messages", func(db *gorm.DB) *gorm.DB {
 				return db.Order("created_at DESC").Limit(1)
@@ -336,12 +340,12 @@ func (s *ChatService) GetAllChatrooms(ctx context.Context, userID uint) ([]Chatr
 	return result, nil
 }
 
-// GetJoinedChatrooms returns group chatrooms the user has joined.
+// GetJoinedChatrooms returns public sanctum-backed chatrooms the user has joined.
 func (s *ChatService) GetJoinedChatrooms(ctx context.Context, userID uint) ([]*models.Conversation, error) {
 	var chatrooms []*models.Conversation
 	err := s.db.WithContext(ctx).
 		Joins("JOIN conversation_participants cp ON cp.conversation_id = conversations.id").
-		Where("conversations.is_group = ? AND cp.user_id = ?", true, userID).
+		Where("conversations.is_group = ? AND conversations.sanctum_id IS NOT NULL AND cp.user_id = ?", true, userID).
 		Preload("Participants").
 		Preload("Messages", func(db *gorm.DB) *gorm.DB {
 			return db.Order("created_at DESC").Limit(1)
@@ -355,7 +359,7 @@ func (s *ChatService) GetJoinedChatrooms(ctx context.Context, userID uint) ([]*m
 	return chatrooms, nil
 }
 
-// JoinChatroom adds the user to a group chatroom.
+// JoinChatroom adds the user to a public sanctum-backed chatroom.
 func (s *ChatService) JoinChatroom(ctx context.Context, roomID, userID uint) (*models.Conversation, error) {
 	var conv models.Conversation
 	if err := s.db.WithContext(ctx).First(&conv, roomID).Error; err != nil {
@@ -364,8 +368,8 @@ func (s *ChatService) JoinChatroom(ctx context.Context, roomID, userID uint) (*m
 		}
 		return nil, err
 	}
-	if !conv.IsGroup {
-		return nil, models.NewValidationError("Cannot join a 1-on-1 conversation")
+	if !isPublicChatroomConversation(&conv) {
+		return nil, models.NewNotFoundError("Chatroom", roomID)
 	}
 	banned, err := s.userBannedInRoom(ctx, roomID, userID)
 	if err != nil {

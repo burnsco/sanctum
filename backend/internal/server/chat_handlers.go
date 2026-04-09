@@ -54,6 +54,7 @@ func (s *Server) CreateConversation(c *fiber.Ctx) error {
 		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
+	sanitizeSharedConversation(conv)
 	return c.Status(fiber.StatusCreated).JSON(conv)
 }
 
@@ -73,6 +74,7 @@ func (s *Server) GetConversations(c *fiber.Ctx) error {
 		}
 	}
 
+	sanitizeSharedConversations(conversations)
 	return c.JSON(conversations)
 }
 
@@ -96,6 +98,7 @@ func (s *Server) GetConversation(c *fiber.Ctx) error {
 		if capErr != nil {
 			return models.RespondWithError(c, fiber.StatusInternalServerError, capErr)
 		}
+		sanitizeSharedConversation(conv)
 		return c.JSON(struct {
 			*models.Conversation
 			Capabilities *ChatroomCapabilities `json:"capabilities,omitempty"`
@@ -105,6 +108,7 @@ func (s *Server) GetConversation(c *fiber.Ctx) error {
 		})
 	}
 
+	sanitizeSharedConversation(conv)
 	return c.JSON(conv)
 }
 
@@ -143,6 +147,7 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 		senderUsername = message.Sender.Username
 	}
 	s.persistMessageMentions(ctx, convID, message, userID, conv.Participants)
+	sanitizeSharedMessage(message)
 
 	// Broadcast message to all WebSocket-connected participants in real-time via ChatHub
 	if s.chatHub != nil {
@@ -204,6 +209,7 @@ func (s *Server) GetMessages(c *fiber.Ctx) error {
 		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
+	sanitizeSharedMessages(messages)
 	return c.JSON(messages)
 }
 
@@ -313,7 +319,7 @@ func (s *Server) chatSvc() *service.ChatService {
 	return s.chatService
 }
 
-// GetAllChatrooms handles GET /api/chatrooms - returns ALL public chatrooms
+// GetAllChatrooms handles GET /api/chatrooms - returns public sanctum chatrooms
 func (s *Server) GetAllChatrooms(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
@@ -329,6 +335,7 @@ func (s *Server) GetAllChatrooms(c *fiber.Ctx) error {
 		if err != nil {
 			return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 		}
+		sanitizeSharedConversation(room.Conversation)
 		result = append(result, ChatroomResponse{
 			Conversation: room.Conversation,
 			IsJoined:     room.IsJoined,
@@ -339,7 +346,7 @@ func (s *Server) GetAllChatrooms(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
-// GetJoinedChatrooms handles GET /api/chatrooms/joined - returns chatrooms the user has joined
+// GetJoinedChatrooms handles GET /api/chatrooms/joined - returns public chatrooms the user has joined
 func (s *Server) GetJoinedChatrooms(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)
@@ -355,6 +362,7 @@ func (s *Server) GetJoinedChatrooms(c *fiber.Ctx) error {
 		if err != nil {
 			return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 		}
+		sanitizeSharedConversation(room)
 		result = append(result, ChatroomResponse{
 			Conversation: room,
 			IsJoined:     true,
@@ -365,7 +373,7 @@ func (s *Server) GetJoinedChatrooms(c *fiber.Ctx) error {
 	return c.JSON(result)
 }
 
-// JoinChatroom handles POST /api/chatrooms/:id/join - join a chatroom
+// JoinChatroom handles POST /api/chatrooms/:id/join - join a public chatroom
 func (s *Server) JoinChatroom(c *fiber.Ctx) error {
 	ctx := c.UserContext()
 	userID := c.Locals("userID").(uint)

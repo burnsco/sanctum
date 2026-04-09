@@ -40,6 +40,7 @@ func (s *Server) CreateComment(c *fiber.Ctx) error {
 	if post, postErr := s.postRepo.GetByID(ctx, postID, userID); postErr == nil {
 		commentsCount = post.CommentsCount
 	}
+	sanitizeSharedComment(created)
 	s.publishBroadcastEvent(EventCommentCreated, map[string]interface{}{
 		"post_id":        postID,
 		"comment":        created,
@@ -64,6 +65,7 @@ func (s *Server) GetComments(c *fiber.Ctx) error {
 		return models.RespondWithError(c, mapServiceError(err), err)
 	}
 
+	sanitizeSharedComments(comments)
 	return c.JSON(comments)
 }
 
@@ -97,6 +99,7 @@ func (s *Server) UpdateComment(c *fiber.Ctx) error {
 	if post, postErr := s.postRepo.GetByID(ctx, updated.PostID, userID); postErr == nil {
 		commentsCount = post.CommentsCount
 	}
+	sanitizeSharedComment(updated)
 	s.publishBroadcastEvent(EventCommentUpdated, map[string]interface{}{
 		"post_id":        updated.PostID,
 		"comment":        updated,

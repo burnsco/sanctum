@@ -82,6 +82,26 @@ describe("FriendList", () => {
     expect(screen.getByText("bob")).toBeInTheDocument();
   });
 
+  it("shows an offline fallback when a friend email is redacted", () => {
+    const friends = [
+      buildUser({
+        id: 1,
+        username: "alice",
+        email: "",
+      }),
+    ];
+    vi.mocked(useFriendsHook).mockReturnValue({
+      data: friends,
+      isLoading: false,
+    } as never);
+
+    renderWithProviders(<FriendList />);
+
+    expect(screen.getByText("Offline")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Share" })).toBeInTheDocument();
+    expect(screen.queryByText("test@example.com")).not.toBeInTheDocument();
+  });
+
   it("renders initials fallback when avatar cannot be resolved", () => {
     const friends = [
       buildUser({

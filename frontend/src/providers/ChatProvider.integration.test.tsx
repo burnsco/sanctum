@@ -43,9 +43,12 @@ function HookTest({ cb }: { cb: (ctx: ReturnType<typeof useChatContext>) => void
 
 class MockWS {
   static instances: MockWS[] = [];
-  onopen: (() => void) | null = null;
-  onmessage: ((ev: { data: string }) => void) | null = null;
-  onclose: ((ev: { code: number; reason: string }) => void) | null = null;
+  onopen: ((event: Event) => void) | null = null;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onclose: ((event: CloseEvent) => void) | null = null;
+  private openListeners = new Set<(event: Event) => void>();
+  private messageListeners = new Set<(event: MessageEvent) => void>();
+  private closeListeners = new Set<(event: CloseEvent) => void>();
   readyState = 0;
   url: string;
   sent: string[] = [];
@@ -55,15 +58,66 @@ class MockWS {
     MockWS.instances.push(this);
   }
 
+  addEventListener(
+    type: string,
+    listener: ((event: Event | MessageEvent | CloseEvent) => void) | null,
+  ) {
+    if (!listener) {
+      return;
+    }
+    switch (type) {
+      case "open":
+        this.openListeners.add(listener as (event: Event) => void);
+        break;
+      case "message":
+        this.messageListeners.add(listener as (event: MessageEvent) => void);
+        break;
+      case "close":
+        this.closeListeners.add(listener as (event: CloseEvent) => void);
+        break;
+    }
+  }
+
+  private emitOpen(event: Event) {
+    this.onopen?.(event);
+    for (const listener of this.openListeners) {
+      listener(event);
+    }
+  }
+
+  private emitMessage(event: MessageEvent) {
+    this.onmessage?.(event);
+    for (const listener of this.messageListeners) {
+      listener(event);
+    }
+  }
+
+  private emitClose(event: CloseEvent) {
+    this.onclose?.(event);
+    for (const listener of this.closeListeners) {
+      listener(event);
+    }
+  }
+
   /** Run deferred open. Call inside act() so setIsConnected runs inside act. */
   flushOpen() {
     this.readyState = 1;
-    this.onopen?.();
+    this.emitOpen(new Event("open"));
+    this.emitMessage(
+      new MessageEvent("message", {
+        data: JSON.stringify({ type: "connected" }),
+      }),
+    );
   }
 
   flushClose(code = 1006, reason = "server restart") {
     this.readyState = 3;
-    this.onclose?.({ code, reason });
+    this.emitClose(
+      new CloseEvent("close", {
+        code,
+        reason,
+      }),
+    );
   }
 
   send(data?: string) {
@@ -76,7 +130,7 @@ class MockWS {
 
   receive(obj: unknown) {
     const data = typeof obj === "string" ? obj : JSON.stringify(obj);
-    this.onmessage?.({ data });
+    this.emitMessage(new MessageEvent("message", { data }));
   }
 }
 

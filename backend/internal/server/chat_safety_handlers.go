@@ -172,6 +172,7 @@ func (s *Server) GetMyMentions(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedMentions(mentions)
 	return c.JSON(mentions)
 }
 

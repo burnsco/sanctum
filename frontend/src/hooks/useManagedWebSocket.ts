@@ -317,7 +317,10 @@ export function useManagedWebSocket({
 
         // Check for 429 Too Many Requests
         const isRateLimited =
-          err && typeof err === "object" && "status" in err && err.status === 429;
+          typeof err === "object" &&
+          err !== null &&
+          "status" in err &&
+          (err as { status?: unknown }).status === 429;
         scheduleReconnect(isRateLimited);
         return;
       }

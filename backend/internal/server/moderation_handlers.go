@@ -30,6 +30,7 @@ func (s *Server) GetMyBlocks(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedUserBlocks(blocks)
 	return c.JSON(blocks)
 }
 

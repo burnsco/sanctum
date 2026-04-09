@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetUserProfile(t *testing.T) {
@@ -59,6 +61,38 @@ func TestGetUserProfile(t *testing.T) {
 	}
 }
 
+func TestGetUserProfile_SanitizesSensitiveFields(t *testing.T) {
+	app := fiber.New()
+	mockRepo := new(MockUserRepository)
+	s := &Server{userRepo: mockRepo}
+
+	app.Get("/users/:id", s.GetUserProfile)
+
+	mockRepo.On("GetByID", mock.Anything, uint(1)).Return(&models.User{
+		ID:                1,
+		Username:          "testuser",
+		Email:             "test@example.com",
+		IsAdmin:           true,
+		IsBanned:          true,
+		BannedReason:      "spam",
+		ModerationStrikes: 4,
+	}, nil).Once()
+
+	req := newRequest(http.MethodGet, "/users/1", nil)
+	resp, _ := app.Test(req)
+	defer func() { _ = resp.Body.Close() }()
+
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var user models.User
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&user))
+	assert.Empty(t, user.Email)
+	assert.True(t, user.IsAdmin)
+	assert.False(t, user.IsBanned)
+	assert.Empty(t, user.BannedReason)
+	assert.Zero(t, user.ModerationStrikes)
+}
+
 func TestGetMyProfile(t *testing.T) {
 	app := fiber.New()
 	mockRepo := new(MockUserRepository)
@@ -71,10 +105,20 @@ func TestGetMyProfile(t *testing.T) {
 	})
 	app.Get("/users/me", s.GetMyProfile)
 
-	mockRepo.On("GetByID", mock.Anything, uint(1)).Return(&models.User{ID: 1, Username: "me"}, nil)
+	mockRepo.On("GetByID", mock.Anything, uint(1)).Return(&models.User{
+		ID:       1,
+		Username: "me",
+		Email:    "me@example.com",
+		IsBanned: true,
+	}, nil)
 
 	req := newRequest(http.MethodGet, "/users/me", nil)
 	resp, _ := app.Test(req)
 	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+	var user models.User
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&user))
+	assert.Equal(t, "me@example.com", user.Email)
+	assert.True(t, user.IsBanned)
 }

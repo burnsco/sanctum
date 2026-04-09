@@ -490,9 +490,9 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 	// Generic /:id route must be last
 	conversations.Get("/:id", s.GetConversation)
 
-	// Chatrooms routes (public group conversations)
+	// Chatrooms routes (public sanctum-backed group conversations)
 	chatrooms := protected.Group("/chatrooms")
-	chatrooms.Get("/", s.GetAllChatrooms)                                     // Get ALL public chatrooms
+	chatrooms.Get("/", s.GetAllChatrooms)                                     // Get public sanctum chatrooms
 	chatrooms.Get("/joined", s.GetJoinedChatrooms)                            // Get rooms user has joined
 	chatrooms.Post("/:id/join", s.JoinChatroom)                               // Join a chatroom
 	chatrooms.Delete("/:id/participants/:participantId", s.RemoveParticipant) // Remove participant (admin/creator only)

@@ -83,7 +83,7 @@ await waitFor(() => expect(result.current.isSuccess).toBe(true));
 - **API client**: `vi.mock('@/api/client', () => ({ apiClient: { getX: vi.fn(), ... } }))`.
 - **Router**: `vi.mock('react-router-dom', async () => ({ ...actual, useNavigate: () => vi.fn() }))`.
 - **localStorage**: In tests that need it, use a `beforeAll` that sets `globalThis.localStorage` to an object with `getItem`, `setItem`, `removeItem`, `clear`.
-- **WebSocket**: Replace `globalThis.WebSocket` with a class that tracks instances and simulates `onopen` / `onmessage`.
+- **WebSocket**: Replace `globalThis.WebSocket` with a class that tracks instances and supports `addEventListener(...)`, with optional `onopen` / `onmessage` helpers for older tests.
 - **Toast**: `vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))`.
 
 ## Coverage

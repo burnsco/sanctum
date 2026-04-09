@@ -175,7 +175,7 @@ func (r *chatRepository) CreateMessage(ctx context.Context, msg *models.Message)
 func (r *chatRepository) GetMessages(ctx context.Context, convID uint, limit, offset int) ([]*models.Message, error) {
 	start := time.Now()
 	var messages []*models.Message
-	histKey := cache.MessageHistoryKey(convID)
+	histKey := cache.MessageHistoryKey(ctx, convID, limit, offset)
 
 	type messagesResult struct {
 		Messages []*models.Message `json:"messages"`

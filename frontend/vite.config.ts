@@ -1,6 +1,42 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+const manualChunkPackages = {
+  "react-vendor": ["react", "react-dom", "react-router-dom"],
+  "ui-vendor": [
+    "@radix-ui/react-avatar",
+    "@radix-ui/react-dropdown-menu",
+    "@radix-ui/react-label",
+    "@radix-ui/react-scroll-area",
+    "@radix-ui/react-slot",
+    "@radix-ui/react-tabs",
+  ],
+  "query-vendor": ["@tanstack/react-query"],
+  "form-vendor": ["@tanstack/react-form", "zod"],
+  "utils-vendor": [
+    "date-fns",
+    "lucide-react",
+    "next-themes",
+    "clsx",
+    "tailwind-merge",
+    "class-variance-authority",
+  ],
+} as const;
+
+function matchesPackage(id: string, pkg: string) {
+  return id.includes(`/node_modules/${pkg}/`) || id.includes(`\\node_modules\\${pkg}\\`);
+}
+
+function getManualChunk(id: string) {
+  for (const [chunkName, packages] of Object.entries(manualChunkPackages)) {
+    if (packages.some((pkg) => matchesPackage(id, pkg))) {
+      return chunkName;
+    }
+  }
+
+  return undefined;
+}
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -52,28 +88,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunks for better caching
-          "react-vendor": ["react", "react-dom", "react-router-dom"],
-          "ui-vendor": [
-            "@radix-ui/react-avatar",
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-label",
-            "@radix-ui/react-scroll-area",
-            "@radix-ui/react-slot",
-            "@radix-ui/react-tabs",
-          ],
-          "query-vendor": ["@tanstack/react-query"],
-          "form-vendor": ["@tanstack/react-form", "zod"],
-          "utils-vendor": [
-            "date-fns",
-            "lucide-react",
-            "next-themes",
-            "clsx",
-            "tailwind-merge",
-            "class-variance-authority",
-          ],
-        },
+        // Keep chunk grouping stable without relying on Rollup's object-form typing.
+        manualChunks: getManualChunk,
       },
     },
     chunkSizeWarningLimit: 600, // Slightly higher limit since we're chunking

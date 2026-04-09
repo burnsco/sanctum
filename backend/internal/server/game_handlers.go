@@ -42,6 +42,7 @@ func (s *Server) CreateGameRoom(c *fiber.Ctx) error {
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
+	sanitizeSharedGameRoom(room)
 	if !created {
 		return c.Status(fiber.StatusOK).JSON(room)
 	}
@@ -63,6 +64,7 @@ func (s *Server) GetActiveGameRooms(c *fiber.Ctx) error {
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
+	sanitizeSharedGameRooms(rooms)
 	return c.JSON(rooms)
 }
 
@@ -98,6 +100,7 @@ func (s *Server) GetGameRoom(c *fiber.Ctx) error {
 		return models.RespondWithError(c, status, err)
 	}
 
+	sanitizeSharedGameRoom(room)
 	return c.JSON(room)
 }
 

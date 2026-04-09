@@ -29,6 +29,7 @@ func (s *Server) GetUserCached(c *fiber.Ctx) error {
 	}
 	// copy into dest
 	user = *u
+	sanitizeSharedUser(&user)
 	return c.JSON(user)
 }
 

@@ -216,8 +216,11 @@ func TestChatService_Chatrooms(t *testing.T) {
 	u1 := &models.User{Username: "u1", Email: "u1@e.com"}
 	db.Create(u1)
 
-	room := &models.Conversation{Name: "Public", IsGroup: true, CreatedBy: u1.ID}
+	publicSanctumID := uint(1)
+	room := &models.Conversation{Name: "Public", IsGroup: true, CreatedBy: u1.ID, SanctumID: &publicSanctumID}
 	db.Create(room)
+	privateGroup := &models.Conversation{Name: "Private", IsGroup: true, CreatedBy: u1.ID}
+	db.Create(privateGroup)
 
 	t.Run("Join and List", func(t *testing.T) {
 		_, err := svc.JoinChatroom(ctx, room.ID, u1.ID)
@@ -231,6 +234,15 @@ func TestChatService_Chatrooms(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, all, 1)
 		assert.True(t, all[0].IsJoined)
+		assert.Equal(t, room.ID, all[0].Conversation.ID)
+	})
+
+	t.Run("Private group is not a public chatroom", func(t *testing.T) {
+		_, err := svc.JoinChatroom(ctx, privateGroup.ID, u1.ID)
+		assert.Error(t, err)
+		var appErr *models.AppError
+		assert.True(t, errors.As(err, &appErr))
+		assert.Equal(t, "NOT_FOUND", appErr.Code)
 	})
 }
 
@@ -250,7 +262,8 @@ func TestChatService_JoinChatroom_BannedUserForbidden(t *testing.T) {
 	ctx := context.Background()
 	user := &models.User{Username: "u1", Email: "u1@e.com"}
 	db.Create(user)
-	room := &models.Conversation{Name: "Public", IsGroup: true, CreatedBy: user.ID}
+	publicSanctumID := uint(1)
+	room := &models.Conversation{Name: "Public", IsGroup: true, CreatedBy: user.ID, SanctumID: &publicSanctumID}
 	db.Create(room)
 	db.Create(&models.ChatroomBan{
 		ConversationID: room.ID,

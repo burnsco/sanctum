@@ -38,6 +38,7 @@ func (s *Server) ListChatroomBans(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedChatroomBans(bans)
 	return c.JSON(bans)
 }
 

@@ -257,6 +257,7 @@ func (s *Server) GetMySanctumRequests(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
+	sanitizeSharedSanctumRequests(requests)
 	return c.JSON(requests)
 }
 
