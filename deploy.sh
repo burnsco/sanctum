@@ -1,13 +1,17 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-REMOTE_HOST="192.168.2.124"
-REMOTE_PORT="2222"
-REMOTE_USER="cburns"
-REMOTE_DOCKER_PATH="/home/cburns/docker/sanctum"
+REMOTE_HOST="${REMOTE_HOST:-192.168.2.124}"
+REMOTE_PORT="${REMOTE_PORT:-2222}"
+REMOTE_USER="${REMOTE_USER:-cburns}"
+REMOTE_DOCKER_PATH="${REMOTE_DOCKER_PATH:-/home/cburns/docker/sanctum}"
+REMOTE_ARCHIVE_PATH="${REMOTE_ARCHIVE_PATH:-/tmp/sanctum-images.tar}"
 
-FRONTEND_IMAGE="ghcr.io/burnsco/sanctum/frontend:latest"
-BACKEND_IMAGE="ghcr.io/burnsco/sanctum/backend:latest"
+FRONTEND_IMAGE="${FRONTEND_IMAGE:-ghcr.io/burnsco/sanctum/frontend:latest}"
+BACKEND_IMAGE="${BACKEND_IMAGE:-ghcr.io/burnsco/sanctum/backend:latest}"
+
+ARCHIVE_PATH="$(mktemp -t sanctum-images.XXXXXX.tar)"
+trap 'rm -f "$ARCHIVE_PATH"' EXIT
 
 echo "🚀 Deploying Sanctum..."
 
@@ -17,11 +21,17 @@ docker build --network=host -t "$FRONTEND_IMAGE" ./frontend
 echo "📦 Building Backend..."
 docker build --network=host --target production -t "$BACKEND_IMAGE" .
 
-echo "⬆️  Pushing images to GHCR..."
-docker push "$FRONTEND_IMAGE"
-docker push "$BACKEND_IMAGE"
+echo "📦 Packaging images for transfer..."
+docker save -o "$ARCHIVE_PATH" "$FRONTEND_IMAGE" "$BACKEND_IMAGE"
 
-echo "🚢 Deploying to server..."
-ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "cd $REMOTE_DOCKER_PATH && docker compose pull && docker compose up -d"
+echo "⬆️  Copying images to mordor..."
+scp -P "$REMOTE_PORT" "$ARCHIVE_PATH" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_ARCHIVE_PATH"
+
+echo "🚢 Loading images and restarting the server stack..."
+remote_cmd=$(printf 'set -euo pipefail; docker load -i %q >/dev/null; rm -f %q; if ! docker image inspect alpine:3.21 >/dev/null 2>&1; then docker pull alpine:3.21 >/dev/null; fi; cd %q && docker compose up -d --no-build --pull never' \
+  "$REMOTE_ARCHIVE_PATH" \
+  "$REMOTE_ARCHIVE_PATH" \
+  "$REMOTE_DOCKER_PATH")
+ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "bash -lc $(printf '%q' "$remote_cmd")"
 
 echo "✅ Deployment complete!"
