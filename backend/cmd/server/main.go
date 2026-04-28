@@ -87,6 +87,9 @@ func main() {
 		BodyLimit: bodyLimitBytes,
 	}
 	if cfg.EnableProxyHeader {
+		if cfg.Env == "production" || cfg.Env == "prod" {
+			log.Println("Warning: ENABLE_PROXY_HEADER is enabled in production; ensure only trusted proxies can reach the backend directly")
+		}
 		fiberConfig.ProxyHeader = "X-Forwarded-For"
 	}
 	app := fiber.New(fiberConfig)
@@ -110,13 +113,17 @@ func main() {
 		}
 
 		// Shutdown server resources
-		if err := srv.Shutdown(ctx); err != nil {
+		resourceCtx, resourceCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer resourceCancel()
+		if err := srv.Shutdown(resourceCtx); err != nil {
 			log.Printf("Server resource shutdown error: %v", err)
 		}
 
 		// Shutdown tracing
 		if shutdownTracing != nil {
-			if err := shutdownTracing(ctx); err != nil {
+			tracingCtx, tracingCancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer tracingCancel()
+			if err := shutdownTracing(tracingCtx); err != nil {
 				log.Printf("Tracing shutdown error: %v", err)
 			}
 		}

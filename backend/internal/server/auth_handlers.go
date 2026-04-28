@@ -111,7 +111,7 @@ func (s *Server) Signup(c *fiber.Ctx) error {
 			models.NewInternalError(err))
 	}
 
-	refreshToken, err := s.generateRefreshToken(user.ID)
+	refreshToken, err := s.generateRefreshTokenWithContext(c.Context(), user.ID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError,
 			models.NewInternalError(err))
@@ -190,7 +190,7 @@ func (s *Server) Login(c *fiber.Ctx) error {
 			models.NewInternalError(err))
 	}
 
-	refreshToken, err := s.generateRefreshToken(user.ID)
+	refreshToken, err := s.generateRefreshTokenWithContext(c.Context(), user.ID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError,
 			models.NewInternalError(err))
@@ -322,7 +322,7 @@ func (s *Server) Refresh(c *fiber.Ctx) error {
 			models.NewInternalError(err))
 	}
 
-	newRefreshToken, err := s.generateRefreshToken(user.ID)
+	newRefreshToken, err := s.generateRefreshTokenWithContext(c.Context(), user.ID)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError,
 			models.NewInternalError(err))
@@ -370,7 +370,10 @@ func (s *Server) Logout(c *fiber.Ctx) error {
 						if exp, ok := claims["exp"].(float64); ok {
 							ttl := time.Until(time.Unix(int64(exp), 0))
 							if ttl > 0 {
-								s.redis.Set(c.Context(), "blacklist:"+jti, "1", ttl)
+								if setErr := s.redis.Set(c.Context(), "blacklist:"+jti, "1", ttl).Err(); setErr != nil {
+									return models.RespondWithError(c, fiber.StatusInternalServerError,
+										models.NewInternalError(fmt.Errorf("failed to blacklist access token: %w", setErr)))
+								}
 							}
 						}
 					}
@@ -403,7 +406,10 @@ func (s *Server) Logout(c *fiber.Ctx) error {
 
 			if s.redis != nil && jti != "" {
 				redisKey := fmt.Sprintf("refresh_token:%d:%s", userID, jti)
-				s.redis.Del(c.Context(), redisKey)
+				if delErr := s.redis.Del(c.Context(), redisKey).Err(); delErr != nil {
+					return models.RespondWithError(c, fiber.StatusInternalServerError,
+						models.NewInternalError(fmt.Errorf("failed to revoke refresh token: %w", delErr)))
+				}
 			}
 		}
 	}
@@ -436,6 +442,10 @@ func (s *Server) generateAccessToken(userID uint, username string) (string, erro
 
 // generateRefreshToken creates a long-lived JWT token for the given user ID
 func (s *Server) generateRefreshToken(userID uint) (string, error) {
+	return s.generateRefreshTokenWithContext(context.Background(), userID)
+}
+
+func (s *Server) generateRefreshTokenWithContext(ctx context.Context, userID uint) (string, error) {
 	if s.config.JWTSecret == "" {
 		return "", fmt.Errorf("JWT secret not configured")
 	}
@@ -462,7 +472,7 @@ func (s *Server) generateRefreshToken(userID uint) (string, error) {
 	// Store JTI in Redis
 	if s.redis != nil {
 		redisKey := fmt.Sprintf("refresh_token:%d:%s", userID, jti)
-		err = s.redis.Set(context.Background(), redisKey, "1", 7*24*time.Hour).Err()
+		err = s.redis.Set(ctx, redisKey, "1", 7*24*time.Hour).Err()
 		if err != nil {
 			return "", fmt.Errorf("failed to store refresh token: %w", err)
 		}
@@ -473,5 +483,5 @@ func (s *Server) generateRefreshToken(userID uint) (string, error) {
 
 // generateJTI creates a unique JWT ID to prevent replay attacks
 func (s *Server) generateJTI() string {
-	return fmt.Sprintf("%d-%s", time.Now().Unix(), uuid.New().String()[:8])
+	return uuid.NewString()
 }

@@ -1,4 +1,5 @@
 import react from "@vitejs/plugin-react";
+import type { Socket } from "node:net";
 import { defineConfig } from "vite";
 
 const manualChunkPackages = {
@@ -59,8 +60,9 @@ export default defineConfig({
           });
           proxy.on("proxyReqWs", (_proxyReq, _req, socket, _options, _head) => {
             console.log("[vite] Proxying WebSocket connection");
-            if (socket && !("destroySoon" in socket)) {
-              (socket as any).destroySoon = (socket as any).destroy;
+            const proxySocket = socket as Socket & { destroySoon?: Socket["destroy"] };
+            if (!proxySocket.destroySoon) {
+              proxySocket.destroySoon = proxySocket.destroy.bind(proxySocket);
             }
           });
           proxy.on("error", (err, _req, res) => {

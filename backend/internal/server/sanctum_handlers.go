@@ -566,10 +566,11 @@ func (s *Server) ApproveSanctumRequest(c *fiber.Ctx) error {
 		}
 
 		*defaultRoom = models.Conversation{
-			Name:      createdSanctum.Name,
-			IsGroup:   true,
-			CreatedBy: approvedRequest.RequestedByUserID,
-			SanctumID: &createdSanctum.ID,
+			Name:       createdSanctum.Name,
+			IsGroup:    true,
+			Visibility: models.ConversationVisibilityPublic,
+			CreatedBy:  approvedRequest.RequestedByUserID,
+			SanctumID:  &createdSanctum.ID,
 		}
 		if err := tx.Create(defaultRoom).Error; err != nil {
 			return err

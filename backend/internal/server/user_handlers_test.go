@@ -87,7 +87,7 @@ func TestGetUserProfile_SanitizesSensitiveFields(t *testing.T) {
 	var user models.User
 	require.NoError(t, json.NewDecoder(resp.Body).Decode(&user))
 	assert.Empty(t, user.Email)
-	assert.True(t, user.IsAdmin)
+	assert.False(t, user.IsAdmin)
 	assert.False(t, user.IsBanned)
 	assert.Empty(t, user.BannedReason)
 	assert.Zero(t, user.ModerationStrikes)

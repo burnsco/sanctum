@@ -98,7 +98,7 @@ export default function UserProfile() {
 
                   <div className="flex items-center gap-2 pt-1 text-xs text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />
-                    Joined {formatDate(user.created_at)}
+                    {user.created_at ? `Joined ${formatDate(user.created_at)}` : "Joined recently"}
                   </div>
                 </div>
               </div>

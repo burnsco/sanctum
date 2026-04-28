@@ -4,12 +4,15 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 	"unicode"
 
 	"sanctum/internal/models"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -26,6 +29,7 @@ type Pagination struct {
 
 const (
 	maxPaginationLimit = 100
+	adminCacheTTL      = 30 * time.Second
 )
 
 // mapServiceError returns the HTTP status code for a service-layer error.
@@ -125,11 +129,40 @@ func (s *Server) isAdmin(c *fiber.Ctx, userID uint) (bool, error) {
 }
 
 func (s *Server) isAdminByUserID(ctx context.Context, userID uint) (bool, error) {
+	if s.redis != nil {
+		value, err := s.redis.Get(ctx, adminCacheKey(userID)).Result()
+		if err == nil {
+			return value == "1", nil
+		}
+		if !errors.Is(err, redis.Nil) {
+			return false, err
+		}
+	}
+
 	var user models.User
 	if err := s.db.WithContext(ctx).Select("is_admin").First(&user, userID).Error; err != nil {
 		return false, err
 	}
+	if s.redis != nil {
+		value := "0"
+		if user.IsAdmin {
+			value = "1"
+		}
+		if err := s.redis.Set(ctx, adminCacheKey(userID), value, adminCacheTTL).Err(); err != nil {
+			return false, err
+		}
+	}
 	return user.IsAdmin, nil
+}
+
+func adminCacheKey(userID uint) string {
+	return fmt.Sprintf("admin:%d", userID)
+}
+
+func (s *Server) invalidateAdminCache(ctx context.Context, userID uint) {
+	if s.redis != nil {
+		_ = s.redis.Del(ctx, adminCacheKey(userID)).Err()
+	}
 }
 
 func (s *Server) isBannedByUserID(ctx context.Context, userID uint) (bool, error) {

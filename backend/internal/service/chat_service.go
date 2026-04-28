@@ -117,9 +117,13 @@ func (s *ChatService) CreateConversation(ctx context.Context, in CreateConversat
 	}
 
 	conv := &models.Conversation{
-		Name:      in.Name,
-		IsGroup:   in.IsGroup,
-		CreatedBy: in.UserID,
+		Name:       in.Name,
+		IsGroup:    in.IsGroup,
+		Visibility: models.ConversationVisibilityDirect,
+		CreatedBy:  in.UserID,
+	}
+	if in.IsGroup {
+		conv.Visibility = models.ConversationVisibilityPrivate
 	}
 	if err := s.chatRepo.CreateConversation(ctx, conv); err != nil {
 		return nil, err
@@ -299,7 +303,9 @@ func (s *ChatService) LeaveConversation(ctx context.Context, convID, userID uint
 }
 
 func isPublicChatroomConversation(conversation *models.Conversation) bool {
-	return conversation != nil && conversation.IsGroup && conversation.SanctumID != nil
+	return conversation != nil &&
+		conversation.IsGroup &&
+		conversation.Visibility == models.ConversationVisibilityPublic
 }
 
 // GetAllChatrooms returns all public sanctum-backed chatrooms with joined status for the user.
@@ -309,7 +315,7 @@ func (s *ChatService) GetAllChatrooms(ctx context.Context, userID uint) ([]Chatr
 
 	err := cache.Aside(ctx, key, &chatrooms, cache.ListTTL, func() error {
 		return s.db.WithContext(ctx).
-			Where("is_group = ? AND sanctum_id IS NOT NULL", true).
+			Where("is_group = ? AND visibility = ?", true, models.ConversationVisibilityPublic).
 			Preload("Participants").
 			Preload("Messages", func(db *gorm.DB) *gorm.DB {
 				return db.Order("created_at DESC").Limit(1)
@@ -345,7 +351,8 @@ func (s *ChatService) GetJoinedChatrooms(ctx context.Context, userID uint) ([]*m
 	var chatrooms []*models.Conversation
 	err := s.db.WithContext(ctx).
 		Joins("JOIN conversation_participants cp ON cp.conversation_id = conversations.id").
-		Where("conversations.is_group = ? AND conversations.sanctum_id IS NOT NULL AND cp.user_id = ?", true, userID).
+		Where("conversations.is_group = ? AND conversations.visibility = ? AND cp.user_id = ?",
+			true, models.ConversationVisibilityPublic, userID).
 		Preload("Participants").
 		Preload("Messages", func(db *gorm.DB) *gorm.DB {
 			return db.Order("created_at DESC").Limit(1)

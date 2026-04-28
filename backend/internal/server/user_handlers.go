@@ -26,8 +26,7 @@ func (s *Server) SearchUsers(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
-	sanitizeSharedUsers(users)
-	return c.JSON(users)
+	return c.JSON(models.NewUserSummaries(users))
 }
 
 // GetAllUsers handles GET /api/users
@@ -48,8 +47,7 @@ func (s *Server) GetAllUsers(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
 
-	sanitizeSharedUsers(users)
-	return c.JSON(users)
+	return c.JSON(models.NewUserSummaries(users))
 }
 
 // GetUserProfile handles GET /api/users/:id
@@ -64,8 +62,7 @@ func (s *Server) GetUserProfile(c *fiber.Ctx) error {
 		return models.RespondWithError(c, fiber.StatusNotFound, err)
 	}
 
-	sanitizeSharedUser(user)
-	return c.JSON(user)
+	return c.JSON(models.NewUserSummary(*user))
 }
 
 // GetMyProfile handles GET /api/users/me
@@ -121,6 +118,7 @@ func (s *Server) PromoteToAdmin(c *fiber.Ctx) error {
 	if err != nil {
 		return models.RespondWithError(c, mapServiceError(err), err)
 	}
+	s.invalidateAdminCache(ctx, targetID)
 
 	return c.JSON(fiber.Map{"message": "User promoted to admin", "user": target})
 }
@@ -142,6 +140,7 @@ func (s *Server) DemoteFromAdmin(c *fiber.Ctx) error {
 	if err != nil {
 		return models.RespondWithError(c, mapServiceError(err), err)
 	}
+	s.invalidateAdminCache(ctx, targetID)
 
 	return c.JSON(fiber.Map{"message": "User demoted from admin", "user": target})
 }

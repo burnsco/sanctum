@@ -37,6 +37,29 @@ class MockSocket {
     }
   }
 
+  removeEventListener(
+    type: string,
+    listener: ((event: Event | MessageEvent | CloseEvent) => void) | null,
+  ) {
+    if (!listener) {
+      return;
+    }
+    switch (type) {
+      case "open":
+        this.openListeners.delete(listener as (event: Event) => void);
+        break;
+      case "message":
+        this.messageListeners.delete(listener as (event: MessageEvent) => void);
+        break;
+      case "error":
+        this.errorListeners.delete(listener as (event: Event) => void);
+        break;
+      case "close":
+        this.closeListeners.delete(listener as (event: CloseEvent) => void);
+        break;
+    }
+  }
+
   private emitOpen(event: Event) {
     this.onopen?.(event);
     for (const listener of this.openListeners) {

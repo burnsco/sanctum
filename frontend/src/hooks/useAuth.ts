@@ -16,8 +16,7 @@ export function useSignup() {
   return useMutation({
     mutationFn: (data: SignupRequest) => apiClient.signup(data),
     onSuccess: (data) => {
-      // Store user (token is handled by apiClient + AuthSessionStore)
-      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.removeItem("user");
       clearCachedUser();
       resetChatDockSession({
         nextUserID: data.user.id,
@@ -40,8 +39,7 @@ export function useLogin() {
   return useMutation({
     mutationFn: (data: LoginRequest) => apiClient.login(data),
     onSuccess: (data) => {
-      // Store user (token is handled by apiClient + AuthSessionStore)
-      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.removeItem("user");
       clearCachedUser();
       resetChatDockSession({
         nextUserID: data.user.id,

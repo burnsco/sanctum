@@ -80,9 +80,15 @@ func Sanctums(db *gorm.DB) error {
 			queryErr := tx.Where("sanctum_id = ?", sanctum.ID).First(&existing).Error
 
 			if queryErr == nil {
-				// Update existing conversation name if needed
+				updates := map[string]interface{}{}
 				if existing.Name != sanctum.Name {
-					if err := tx.Model(&existing).Update("name", sanctum.Name).Error; err != nil {
+					updates["name"] = sanctum.Name
+				}
+				if existing.Visibility != models.ConversationVisibilityPublic {
+					updates["visibility"] = models.ConversationVisibilityPublic
+				}
+				if len(updates) > 0 {
+					if err := tx.Model(&existing).Updates(updates).Error; err != nil {
 						return err
 					}
 				}
@@ -96,10 +102,11 @@ func Sanctums(db *gorm.DB) error {
 			// Create new conversation
 			sid := sanctum.ID
 			conv := models.Conversation{
-				Name:      sanctum.Name,
-				IsGroup:   true,
-				CreatedBy: 0,
-				SanctumID: &sid,
+				Name:       sanctum.Name,
+				IsGroup:    true,
+				Visibility: models.ConversationVisibilityPublic,
+				CreatedBy:  0,
+				SanctumID:  &sid,
 			}
 			if err := tx.Create(&conv).Error; err != nil {
 				return fmt.Errorf("failed to create conversation for sanctum %s (ID: %d): %w", item.Slug, sid, err)

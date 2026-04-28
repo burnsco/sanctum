@@ -75,11 +75,8 @@ export function useUpdateMyProfile() {
           ...newData,
         });
 
-        // Also update localStorage + cache
-        const merged = { ...previousUser, ...newData };
-        localStorage.setItem("user", JSON.stringify(merged));
-        cachedUser = merged as User;
-        cachedUserRaw = localStorage.getItem("user");
+        cachedUser = { ...previousUser, ...newData } as User;
+        cachedUserRaw = null;
       }
 
       return { previousUser };
@@ -88,9 +85,8 @@ export function useUpdateMyProfile() {
       // Rollback on error
       if (context?.previousUser) {
         queryClient.setQueryData(userKeys.me(), context.previousUser);
-        localStorage.setItem("user", JSON.stringify(context.previousUser));
         cachedUser = context.previousUser;
-        cachedUserRaw = localStorage.getItem("user");
+        cachedUserRaw = null;
       }
     },
     onSettled: () => {

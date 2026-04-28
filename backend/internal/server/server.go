@@ -111,6 +111,17 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	cache.InitRedis(cfg.RedisURL)
 	redisClient := cache.GetClient()
 
+	return newServerFromDeps(cfg, db, redisClient), nil
+}
+
+// NewServerWithDeps creates a Server using already-initialized dependencies.
+// Use this in tests or when a bootstrap layer establishes DB/Redis and optionally
+// performs explicit seeding.
+func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Client) (*Server, error) {
+	return newServerFromDeps(cfg, db, redisClient), nil
+}
+
+func newServerFromDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Client) *Server {
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	postRepo := repository.NewPostRepository(db)
@@ -195,95 +206,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 		)
 	}
 
-	return server, nil
-}
-
-// NewServerWithDeps creates a Server using already-initialized dependencies.
-// Use this in tests or when a bootstrap layer establishes DB/Redis and optionally
-// performs explicit seeding.
-func NewServerWithDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Client) (*Server, error) {
-	// Initialize repositories
-	userRepo := repository.NewUserRepository(db)
-	postRepo := repository.NewPostRepository(db)
-	pollRepo := repository.NewPollRepository(db)
-	imageRepo := repository.NewImageRepository(db)
-	commentRepo := repository.NewCommentRepository(db)
-	chatRepo := repository.NewChatRepository(db)
-	friendRepo := repository.NewFriendRepository(db)
-	gameRepo := repository.NewGameRepository(db)
-
-	// Initialize Prometheus metrics
-	prom := middleware.InitMetrics("sanctum-api")
-
-	// Initialize Logger with correct env
-	middleware.InitLogger(cfg.Env)
-
-	server := &Server{
-		config:          cfg,
-		db:              db,
-		redis:           redisClient,
-		promMiddleware:  prom,
-		userRepo:        userRepo,
-		postRepo:        postRepo,
-		pollRepo:        pollRepo,
-		imageRepo:       imageRepo,
-		commentRepo:     commentRepo,
-		chatRepo:        chatRepo,
-		friendRepo:      friendRepo,
-		gameRepo:        gameRepo,
-		featureFlags:    featureflags.NewManager(cfg.FeatureFlags),
-		consumedTickets: make(map[string]consumedTicketEntry),
-	}
-
-	server.postService = service.NewPostService(server.postRepo, server.pollRepo, server.isAdminByUserID)
-	server.imageService = service.NewImageService(server.imageRepo, cfg)
-	server.commentService = service.NewCommentService(server.commentRepo, server.postRepo, server.isAdminByUserID)
-	server.chatService = service.NewChatService(
-		server.chatRepo,
-		server.userRepo,
-		server.db,
-		server.isAdminByUserID,
-		server.canModerateChatroomByUserID,
-	)
-	server.userService = service.NewUserService(server.userRepo)
-	server.moderationService = service.NewModerationService(server.db)
-	server.gameService = service.NewGameService(server.gameRepo)
-
-	if cfg.OpenAIModerationKey != "" {
-		mod := moderation.NewOpenAI(cfg.OpenAIModerationKey)
-		strikeTracker := service.NewGORMStrikeTracker(db)
-		server.postService.SetModerator(mod)
-		server.postService.SetStrikeTracker(strikeTracker)
-		server.commentService.SetModerator(mod)
-		server.commentService.SetStrikeTracker(strikeTracker)
-		server.imageService.SetModerator(mod)
-		log.Println("[moderation] OpenAI content moderation enabled (posts, comments, and image uploads)")
-	}
-
-	// Initialize notifier and hub if Redis is available
-	if redisClient != nil {
-		server.notifier = notifications.NewNotifier(redisClient)
-
-		// Create a single shared ConnectionManager and wire it into both hubs.
-		sharedPresence := notifications.NewConnectionManager(redisClient, notifications.ConnectionManagerConfig{})
-
-		server.hub = notifications.NewHub(redisClient)
-		server.hub.SetPresenceManager(sharedPresence)
-
-		server.chatHub = notifications.NewChatHub(redisClient)
-		server.chatHub.SetPresenceManager(sharedPresence)
-
-		server.gameHub = notifications.NewGameHub(db, server.notifier)
-		server.hubs = []wireableHub{server.hub, server.chatHub, server.gameHub}
-
-		// Register server-level presence listeners (fanout to friend notifications)
-		sharedPresence.AddListener(
-			func(userID uint) { server.notifyFriendsPresence(userID, "online") },
-			func(userID uint) { server.notifyFriendsPresence(userID, "offline") },
-		)
-	}
-
-	return server, nil
+	return server
 }
 
 // SetupMiddleware configures middleware for the Fiber app
@@ -368,9 +291,9 @@ func (s *Server) SetupRoutes(app *fiber.App) {
 
 	// Metrics endpoint for Prometheus
 	if s.promMiddleware != nil {
-		s.promMiddleware.RegisterAt(app, "/metrics")
+		s.promMiddleware.RegisterAt(app, "/metrics", s.AuthRequired(), s.AdminRequired())
 	}
-	api.Get("/metrics/dashboard", monitor.New(monitor.Config{
+	api.Get("/metrics/dashboard", s.AuthRequired(), s.AdminRequired(), monitor.New(monitor.Config{
 		Title: "Sanctum Backend Metrics Dashboard",
 	}))
 
