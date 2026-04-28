@@ -379,10 +379,19 @@ func (s *PostService) UpdatePost(ctx context.Context, in UpdatePostInput) (*mode
 		return nil, models.NewUnauthorizedError("You can only update your own posts")
 	}
 
+	const maxTitleLen = 300
+	const maxContentLen = 50000
+
 	if in.Title != "" {
+		if len(in.Title) > maxTitleLen {
+			return nil, models.NewValidationError("Title too long (max 300 characters)")
+		}
 		post.Title = in.Title
 	}
 	if in.Content != "" {
+		if len(in.Content) > maxContentLen {
+			return nil, models.NewValidationError("Content too long (max 50000 characters)")
+		}
 		post.Content = in.Content
 	}
 	if in.ImageURL != "" {
@@ -390,10 +399,33 @@ func (s *PostService) UpdatePost(ctx context.Context, in UpdatePostInput) (*mode
 		post.ImageHash = extractImageHash(in.ImageURL)
 	}
 	if in.LinkURL != "" {
+		if _, err := url.ParseRequestURI(in.LinkURL); err != nil {
+			return nil, models.NewValidationError("link_url must be a valid URL")
+		}
 		post.LinkURL = in.LinkURL
 	}
 	if in.YoutubeURL != "" {
+		if !isYouTubeURL(in.YoutubeURL) {
+			return nil, models.NewValidationError("youtube_url must be a valid YouTube URL")
+		}
 		post.YoutubeURL = in.YoutubeURL
+	}
+
+	if s.moderator != nil && (in.Title != "" || in.Content != "") {
+		imageURLForCheck := post.ImageURL
+		if strings.HasPrefix(imageURLForCheck, "/") {
+			imageURLForCheck = ""
+		}
+		if err := s.moderator.CheckWithImage(ctx, post.Title+" "+post.Content, imageURLForCheck); err != nil {
+			if s.strikeTracker != nil {
+				strikes, isBanned, strikeErr := s.strikeTracker.RecordStrike(ctx, in.UserID)
+				if strikeErr != nil {
+					return nil, fmt.Errorf("recording moderation strike: %w", strikeErr)
+				}
+				return nil, models.NewModerationViolationError(err.Error(), strikes, isBanned)
+			}
+			return nil, models.NewValidationError(err.Error())
+		}
 	}
 
 	if err := s.postRepo.Update(ctx, post); err != nil {

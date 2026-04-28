@@ -286,22 +286,17 @@ func (s *Server) Refresh(c *fiber.Ctx) error {
 
 	if s.redis != nil {
 		redisKey := fmt.Sprintf("refresh_token:%d:%s", userID, jti)
-		exists, errExists := s.redis.Exists(c.Context(), redisKey).Result()
-		if errExists != nil {
-			return models.RespondWithError(c, fiber.StatusInternalServerError,
-				models.NewInternalError(errExists))
-		}
-		if exists == 0 {
-			return models.RespondWithError(c, fiber.StatusUnauthorized,
-				models.NewUnauthorizedError("Refresh token revoked or already used"))
-		}
-
-		// Refresh token rotation: Revoke current one. If deletion fails,
-		// reject the request to prevent issuing new tokens while the old
-		// refresh token remains valid.
-		if errDel := s.redis.Del(c.Context(), redisKey).Err(); errDel != nil {
+		// Atomic revoke: DEL returns the number of keys removed. Only the
+		// caller that actually deletes the key is allowed to continue;
+		// concurrent replays see deleted == 0 and are rejected.
+		deleted, errDel := s.redis.Del(c.Context(), redisKey).Result()
+		if errDel != nil {
 			return models.RespondWithError(c, fiber.StatusInternalServerError,
 				models.NewInternalError(fmt.Errorf("failed to revoke refresh token: %w", errDel)))
+		}
+		if deleted == 0 {
+			return models.RespondWithError(c, fiber.StatusUnauthorized,
+				models.NewUnauthorizedError("Refresh token revoked or already used"))
 		}
 	}
 
