@@ -39,6 +39,10 @@
 - Added retry-loop protection for 401 refresh handling.
 - Hardened logout refresh-token revocation, JTI generation, refresh-token Redis context usage, admin cache behavior, metrics auth, proxy warnings, and shutdown deadlines.
 - Deduplicated server constructor initialization and removed backend scratch files.
+- Addressed PR review follow-ups:
+  - Made `000013_conversation_visibility` skip adding the visibility check constraint when the baseline schema already created it.
+  - Ensured logout clears the refresh cookie before access-token blacklist or refresh-token revocation errors can return.
+  - Made admin cache read/write failures fall back to the database result instead of blocking admin authorization.
 
 ## Validation
 
@@ -52,10 +56,13 @@
   - `make lint`
   - `make lint-frontend`
   - `make test-frontend`
+  - `git diff --check`
+  - `go test ./internal/server ./internal/service`
 - Test results:
   - Backend race suite passed.
   - Frontend suite passed: 60 files, 267 tests.
   - Backend and frontend lint passed.
+  - PR follow-up backend targeted suite passed.
 - Manual verification:
   - Reviewed final diff/stat and confirmed changes map to the local review findings.
 

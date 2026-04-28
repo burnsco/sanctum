@@ -13,8 +13,17 @@ UPDATE conversations
 SET visibility = 'direct'
 WHERE is_group = FALSE;
 
-ALTER TABLE conversations
-    ADD CONSTRAINT chk_conversations_visibility
-    CHECK (visibility IN ('public', 'private', 'direct'));
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'chk_conversations_visibility'
+    ) THEN
+        ALTER TABLE conversations
+            ADD CONSTRAINT chk_conversations_visibility
+            CHECK (visibility IN ('public', 'private', 'direct'));
+    END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_conversations_visibility ON conversations (visibility);

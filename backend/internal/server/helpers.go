@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 	"unicode"
@@ -135,7 +136,7 @@ func (s *Server) isAdminByUserID(ctx context.Context, userID uint) (bool, error)
 			return value == "1", nil
 		}
 		if !errors.Is(err, redis.Nil) {
-			return false, err
+			log.Printf("admin cache read failed for user %d: %v", userID, err)
 		}
 	}
 
@@ -149,7 +150,7 @@ func (s *Server) isAdminByUserID(ctx context.Context, userID uint) (bool, error)
 			value = "1"
 		}
 		if err := s.redis.Set(ctx, adminCacheKey(userID), value, adminCacheTTL).Err(); err != nil {
-			return false, err
+			log.Printf("admin cache write failed for user %d: %v", userID, err)
 		}
 	}
 	return user.IsAdmin, nil

@@ -354,6 +354,13 @@ func (s *Server) Logout(c *fiber.Ctx) error {
 			models.NewValidationError("Invalid request body"))
 	}
 
+	if req.RefreshToken == "" {
+		req.RefreshToken = c.Cookies("refresh_token")
+	}
+
+	// Always clear the browser refresh cookie before Redis-backed revocation can fail.
+	c.ClearCookie("refresh_token")
+
 	// Blacklist the access token if provided in Authorization header
 	authHeader := c.Get("Authorization")
 	if authHeader != "" {
@@ -381,13 +388,6 @@ func (s *Server) Logout(c *fiber.Ctx) error {
 			}
 		}
 	}
-
-	if req.RefreshToken == "" {
-		req.RefreshToken = c.Cookies("refresh_token")
-	}
-
-	// Clear the refresh token cookie
-	c.ClearCookie("refresh_token")
 
 	if req.RefreshToken == "" {
 		return c.JSON(fiber.Map{"message": "Logged out successfully"})
