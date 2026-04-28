@@ -574,8 +574,9 @@ func (s *Seeder) SeedDMs(users []*models.User) error {
 		}
 
 		conv := &models.Conversation{
-			IsGroup:   false,
-			CreatedBy: u1.ID,
+			IsGroup:    false,
+			Visibility: models.ConversationVisibilityDirect,
+			CreatedBy:  u1.ID,
 		}
 		if err := s.db.Create(conv).Error; err != nil {
 			continue

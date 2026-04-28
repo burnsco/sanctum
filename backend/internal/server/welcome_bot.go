@@ -173,7 +173,12 @@ func (s *Server) ensureDirectConversation(ctx context.Context, userID, otherUser
 		return 0, findErr
 	}
 
-	conv := models.Conversation{IsGroup: false, CreatedBy: userID, Name: ""}
+	conv := models.Conversation{
+		IsGroup:    false,
+		Visibility: models.ConversationVisibilityDirect,
+		CreatedBy:  userID,
+		Name:       "",
+	}
 	if err := s.db.WithContext(ctx).Create(&conv).Error; err != nil {
 		return 0, err
 	}

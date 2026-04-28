@@ -3,7 +3,7 @@
 export interface User {
   id: number;
   username: string;
-  email: string;
+  email?: string;
   bio?: string;
   avatar?: string;
   is_admin?: boolean;
@@ -12,9 +12,9 @@ export interface User {
   banned_reason?: string;
   banned_by_user_id?: number;
   moderation_strikes?: number;
-  created_at: string;
+  created_at?: string;
   liked?: boolean;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export type PostType = "text" | "media" | "video" | "link" | "poll";

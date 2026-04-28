@@ -7,15 +7,14 @@ func sanitizeSharedUser(user *models.User) {
 		return
 	}
 
-	user.Email = ""
-	user.Password = ""
-	user.IsBanned = false
-	user.BannedAt = nil
-	user.BannedReason = ""
-	user.BannedByUserID = nil
-	user.ModerationStrikes = 0
-
-	sanitizeSharedPostValues(user.Posts)
+	posts := user.Posts
+	sanitizeSharedPostValues(posts)
+	*user = models.User{
+		ID:       user.ID,
+		Username: user.Username,
+		Avatar:   user.Avatar,
+		Posts:    posts,
+	}
 }
 
 func sanitizeSharedUsers(users []models.User) {

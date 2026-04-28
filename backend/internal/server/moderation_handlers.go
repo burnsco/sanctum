@@ -437,6 +437,7 @@ func (s *Server) BanUser(c *fiber.Ctx) error {
 		Updates(updates).Error; err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
+	s.invalidateAdminCache(ctx, targetID)
 
 	return c.JSON(fiber.Map{"message": "User banned"})
 }
@@ -470,6 +471,7 @@ func (s *Server) UnbanUser(c *fiber.Ctx) error {
 		Updates(updates).Error; err != nil {
 		return models.RespondWithError(c, fiber.StatusInternalServerError, err)
 	}
+	s.invalidateAdminCache(ctx, targetID)
 
 	return c.JSON(fiber.Map{"message": "User unbanned"})
 }

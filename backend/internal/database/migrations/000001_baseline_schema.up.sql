@@ -95,12 +95,14 @@ CREATE TABLE conversations (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL DEFAULT '',
     is_group BOOLEAN NOT NULL DEFAULT FALSE,
+    visibility VARCHAR(20) NOT NULL DEFAULT 'direct',
     avatar VARCHAR(255) NOT NULL DEFAULT '',
     created_by BIGINT NOT NULL DEFAULT 0,
     sanctum_id BIGINT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMPTZ,
+    CONSTRAINT chk_conversations_visibility CHECK (visibility IN ('public', 'private', 'direct')),
     CONSTRAINT fk_conversations_sanctum FOREIGN KEY (sanctum_id) REFERENCES sanctums(id) ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED
 );
 
@@ -198,6 +200,7 @@ CREATE INDEX idx_comments_user_id ON comments (user_id);
 CREATE INDEX idx_comments_deleted_at ON comments (deleted_at);
 CREATE INDEX idx_likes_post_id ON likes (post_id);
 CREATE UNIQUE INDEX idx_conversations_sanctum_id_unique ON conversations (sanctum_id) WHERE sanctum_id IS NOT NULL;
+CREATE INDEX idx_conversations_visibility ON conversations (visibility);
 CREATE INDEX idx_conversations_deleted_at ON conversations (deleted_at);
 CREATE INDEX idx_conversation_participants_user_id ON conversation_participants (user_id);
 CREATE INDEX idx_messages_conversation_id ON messages (conversation_id);

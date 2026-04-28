@@ -1,5 +1,26 @@
 import "@testing-library/jest-dom";
 
+const localStorageBackingStore = new Map<string, string>();
+
+Object.defineProperty(globalThis, "localStorage", {
+  configurable: true,
+  writable: true,
+  value: {
+    clear: () => localStorageBackingStore.clear(),
+    getItem: (key: string) => localStorageBackingStore.get(key) ?? null,
+    key: (index: number) => Array.from(localStorageBackingStore.keys())[index] ?? null,
+    removeItem: (key: string) => {
+      localStorageBackingStore.delete(key);
+    },
+    setItem: (key: string, value: string) => {
+      localStorageBackingStore.set(key, String(value));
+    },
+    get length() {
+      return localStorageBackingStore.size;
+    },
+  },
+});
+
 // Mock matchMedia
 Object.defineProperty(window, "matchMedia", {
   writable: true,

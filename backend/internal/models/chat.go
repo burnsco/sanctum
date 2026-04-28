@@ -8,11 +8,21 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	// ConversationVisibilityPublic marks sanctum chatrooms that anyone can discover and join.
+	ConversationVisibilityPublic = "public"
+	// ConversationVisibilityPrivate marks user-created group conversations.
+	ConversationVisibilityPrivate = "private"
+	// ConversationVisibilityDirect marks one-on-one conversations.
+	ConversationVisibilityDirect = "direct"
+)
+
 // Conversation represents a chat conversation (can be 1-on-1 or group)
 type Conversation struct {
 	ID           uint           `gorm:"primaryKey" json:"id"`
 	Name         string         `json:"name"` // For group chats
 	IsGroup      bool           `gorm:"default:false" json:"is_group"`
+	Visibility   string         `gorm:"type:varchar(20);default:'direct';not null" json:"visibility"`
 	Avatar       string         `json:"avatar"` // For group chats
 	CreatedBy    uint           `json:"created_by"`
 	SanctumID    *uint          `gorm:"uniqueIndex:idx_conversations_sanctum_id_unique,where:sanctum_id IS NOT NULL" json:"sanctum_id,omitempty"`

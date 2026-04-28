@@ -122,7 +122,7 @@ describe("useLogin", () => {
     clearCachedUser();
   });
 
-  it("stores token and user then navigates to /posts on success", async () => {
+  it("stores token in memory then navigates to /posts on success", async () => {
     vi.mocked(apiClient.login).mockImplementation(async () => {
       const t = new Date().toISOString();
       const data = {
@@ -155,7 +155,7 @@ describe("useLogin", () => {
     expect(navigateMock).toHaveBeenCalledWith("/posts");
   });
 
-  it("replaces stale cached user after login", async () => {
+  it("clears stale cached user after login", async () => {
     localStorage.setItem(
       "user",
       JSON.stringify({
@@ -194,7 +194,7 @@ describe("useLogin", () => {
       });
     });
 
-    expect(getCurrentUser()?.id).toBe(2);
+    expect(getCurrentUser()).toBeNull();
   });
 });
 

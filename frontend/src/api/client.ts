@@ -78,7 +78,11 @@ class ApiClient {
     return useAuthSessionStore.getState().accessToken;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    retried = false,
+  ): Promise<T> {
     // Ensure we pass an absolute URL to `fetch`. When `VITE_API_URL` is a
     // relative path (e.g. '/api') some runtimes (node fetch) require an
     // absolute URL. Prefer `baseUrl` when absolute, otherwise build from
@@ -147,6 +151,7 @@ class ApiClient {
         // excluding auth endpoints.
         if (
           response.status === 401 &&
+          !retried &&
           endpoint !== "/auth/login" &&
           endpoint !== "/auth/signup" &&
           endpoint !== "/auth/refresh" &&
@@ -159,7 +164,7 @@ class ApiClient {
             if (newToken) {
               logger.info("Token refreshed successfully, retrying request");
               // Retry with new token
-              return this.request(endpoint, options);
+              return this.request(endpoint, options, true);
             }
           } catch (refreshErr) {
             logger.error("Token refresh failed", { error: refreshErr });

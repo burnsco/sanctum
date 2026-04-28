@@ -217,9 +217,20 @@ func TestChatService_Chatrooms(t *testing.T) {
 	db.Create(u1)
 
 	publicSanctumID := uint(1)
-	room := &models.Conversation{Name: "Public", IsGroup: true, CreatedBy: u1.ID, SanctumID: &publicSanctumID}
+	room := &models.Conversation{
+		Name:       "Public",
+		IsGroup:    true,
+		Visibility: models.ConversationVisibilityPublic,
+		CreatedBy:  u1.ID,
+		SanctumID:  &publicSanctumID,
+	}
 	db.Create(room)
-	privateGroup := &models.Conversation{Name: "Private", IsGroup: true, CreatedBy: u1.ID}
+	privateGroup := &models.Conversation{
+		Name:       "Private",
+		IsGroup:    true,
+		Visibility: models.ConversationVisibilityPrivate,
+		CreatedBy:  u1.ID,
+	}
 	db.Create(privateGroup)
 
 	t.Run("Join and List", func(t *testing.T) {
@@ -263,7 +274,13 @@ func TestChatService_JoinChatroom_BannedUserForbidden(t *testing.T) {
 	user := &models.User{Username: "u1", Email: "u1@e.com"}
 	db.Create(user)
 	publicSanctumID := uint(1)
-	room := &models.Conversation{Name: "Public", IsGroup: true, CreatedBy: user.ID, SanctumID: &publicSanctumID}
+	room := &models.Conversation{
+		Name:       "Public",
+		IsGroup:    true,
+		Visibility: models.ConversationVisibilityPublic,
+		CreatedBy:  user.ID,
+		SanctumID:  &publicSanctumID,
+	}
 	db.Create(room)
 	db.Create(&models.ChatroomBan{
 		ConversationID: room.ID,

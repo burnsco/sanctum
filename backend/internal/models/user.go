@@ -26,3 +26,28 @@ type User struct {
 	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
 	Posts             []Post         `gorm:"foreignKey:UserID" json:"posts,omitempty"`
 }
+
+// UserSummary is the safe public representation of a user embedded in public responses.
+type UserSummary struct {
+	ID       uint   `json:"id"`
+	Username string `json:"username"`
+	Avatar   string `json:"avatar"`
+}
+
+// NewUserSummary returns the public-safe user DTO for shared API responses.
+func NewUserSummary(user User) UserSummary {
+	return UserSummary{
+		ID:       user.ID,
+		Username: user.Username,
+		Avatar:   user.Avatar,
+	}
+}
+
+// NewUserSummaries returns public-safe user DTOs for shared API responses.
+func NewUserSummaries(users []User) []UserSummary {
+	summaries := make([]UserSummary, 0, len(users))
+	for _, user := range users {
+		summaries = append(summaries, NewUserSummary(user))
+	}
+	return summaries
+}

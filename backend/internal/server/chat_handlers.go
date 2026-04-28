@@ -149,27 +149,22 @@ func (s *Server) SendMessage(c *fiber.Ctx) error {
 	s.persistMessageMentions(ctx, convID, message, userID, conv.Participants)
 	sanitizeSharedMessage(message)
 
-	// Broadcast message to all WebSocket-connected participants in real-time via ChatHub
-	if s.chatHub != nil {
-		s.chatHub.BroadcastToConversation(convID, notifications.ChatMessage{
+	if s.notifier != nil {
+		messageJSON, marshalErr := json.Marshal(notifications.ChatMessage{
 			Type:           "message",
 			ConversationID: convID,
 			UserID:         userID,
 			Username:       senderUsername,
 			Payload:        message,
 		})
-	}
-
-	// For public chatrooms, broadcast room-level realtime updates only to
-	// connected participants in that conversation.
-	if conv.IsGroup && s.chatHub != nil {
-		s.chatHub.BroadcastToConversation(convID, notifications.ChatMessage{
-			Type:           "room_message",
-			ConversationID: convID,
-			UserID:         userID,
-			Username:       senderUsername,
-			Payload:        message,
-		})
+		if marshalErr != nil {
+			return models.RespondWithError(c, fiber.StatusInternalServerError,
+				models.NewInternalError(marshalErr))
+		}
+		if pubErr := s.notifier.PublishChatMessage(ctx, convID, string(messageJSON)); pubErr != nil {
+			return models.RespondWithError(c, fiber.StatusInternalServerError,
+				models.NewInternalError(pubErr))
+		}
 	}
 
 	// Notify only for direct messages; chatroom/group traffic should not trigger

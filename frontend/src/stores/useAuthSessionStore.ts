@@ -1,8 +1,7 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 
 interface AuthSessionState {
-  /** True once Zustand has rehydrated state from localStorage. */
+  /** Memory-only auth has no persisted hydration step; kept for route gating compatibility. */
   _hasHydrated: boolean;
   accessToken: string | null;
   setHasHydrated: (value: boolean) => void;
@@ -10,34 +9,10 @@ interface AuthSessionState {
   clear: () => void;
 }
 
-export const useAuthSessionStore = create<AuthSessionState>()(
-  persist(
-    (set) => ({
-      _hasHydrated: false,
-      accessToken: null,
-      setHasHydrated: (value: boolean) => set({ _hasHydrated: value }),
-      setAccessToken: (token: string | null) => set({ accessToken: token, _hasHydrated: true }),
-      clear: () => set({ accessToken: null, _hasHydrated: true }),
-    }),
-    {
-      name: "auth-session-storage",
-      onRehydrateStorage: () => {
-        return (state, _error) => {
-          if (state) {
-            state.setHasHydrated(true);
-            return;
-          }
-
-          // If hydration fails before state is available, flip hydration on the
-          // next microtask so ProtectedRoute cannot deadlock forever.
-          queueMicrotask(() => {
-            useAuthSessionStore.getState().setHasHydrated(true);
-          });
-        };
-      },
-      partialize: (state) => ({
-        accessToken: state.accessToken,
-      }),
-    },
-  ),
-);
+export const useAuthSessionStore = create<AuthSessionState>()((set) => ({
+  _hasHydrated: true,
+  accessToken: null,
+  setHasHydrated: (value: boolean) => set({ _hasHydrated: value }),
+  setAccessToken: (token: string | null) => set({ accessToken: token, _hasHydrated: true }),
+  clear: () => set({ accessToken: null, _hasHydrated: true }),
+}));

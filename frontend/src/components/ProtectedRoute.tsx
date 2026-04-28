@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { apiClient } from "@/api/client";
 import { useIsAuthenticated, useValidateToken } from "@/hooks/useUsers";
 import { logger } from "@/lib/logger";
 import { useAuthSessionStore } from "@/stores/useAuthSessionStore";
@@ -10,12 +11,42 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const hasHydrated = useAuthSessionStore((s) => s._hasHydrated);
+  const accessToken = useAuthSessionStore((s) => s.accessToken);
   const isAuthenticated = useIsAuthenticated();
   const { data: tokenValid, isLoading, error, refetch } = useValidateToken();
   const location = useLocation();
   const clearAuth = useAuthSessionStore((s) => s.clear);
+  const [bootstrapAttempted, setBootstrapAttempted] = useState(false);
+  const [isBootstrapping, setIsBootstrapping] = useState(false);
   const shouldShowValidationGate =
-    !hasHydrated || (isAuthenticated && isLoading && tokenValid === undefined);
+    !hasHydrated || isBootstrapping || (isAuthenticated && isLoading && tokenValid === undefined);
+
+  useEffect(() => {
+    if (!hasHydrated || isAuthenticated || accessToken || bootstrapAttempted || isBootstrapping) {
+      return;
+    }
+
+    let cancelled = false;
+    setIsBootstrapping(true);
+    void apiClient
+      .refresh()
+      .catch((refreshError) => {
+        logger.debug("ProtectedRoute: refresh-cookie bootstrap failed", { error: refreshError });
+        if (typeof clearAuth === "function") {
+          clearAuth();
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setBootstrapAttempted(true);
+          setIsBootstrapping(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasHydrated, isAuthenticated, accessToken, bootstrapAttempted, isBootstrapping, clearAuth]);
 
   // Log state transitions for debugging
   useEffect(() => {
