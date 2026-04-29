@@ -117,6 +117,23 @@ func (s *CommentService) UpdateComment(ctx context.Context, in UpdateCommentInpu
 	if in.Content == "" {
 		return nil, models.NewValidationError("Content is required")
 	}
+	const maxCommentLen = 10000
+	if len(in.Content) > maxCommentLen {
+		return nil, models.NewValidationError("Comment too long (max 10000 characters)")
+	}
+
+	if s.moderator != nil {
+		if err := s.moderator.Check(ctx, in.Content); err != nil {
+			if s.strikeTracker != nil {
+				strikes, isBanned, strikeErr := s.strikeTracker.RecordStrike(ctx, in.UserID)
+				if strikeErr != nil {
+					return nil, fmt.Errorf("recording moderation strike: %w", strikeErr)
+				}
+				return nil, models.NewModerationViolationError(err.Error(), strikes, isBanned)
+			}
+			return nil, models.NewValidationError(err.Error())
+		}
+	}
 
 	comment.Content = in.Content
 	if err := s.commentRepo.Update(ctx, comment); err != nil {
