@@ -1,10 +1,22 @@
 import { type FormEvent, useState } from "react";
 import { Link } from "react-router-dom";
+import { ApiError } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateSanctumRequest } from "@/hooks/useSanctums";
+
+function friendlyErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.status === 409) return "A request with that name or slug already exists.";
+    if (error.status === 400) return error.message || "Please check the form and try again.";
+    if (error.status === 401 || error.status === 403) return "You are not allowed to submit this request.";
+    if (error.status === 429) return "You're submitting too quickly. Please wait and try again.";
+    return error.message || "Request failed. Please try again.";
+  }
+  return "Something went wrong. Please try again.";
+}
 
 export default function SanctumRequestForm() {
   const [requestedName, setRequestedName] = useState("");
@@ -37,6 +49,7 @@ export default function SanctumRequestForm() {
               value={requestedName}
               onChange={(event) => setRequestedName(event.target.value)}
               required
+              disabled={createRequest.isPending}
             />
           </div>
 
@@ -48,6 +61,7 @@ export default function SanctumRequestForm() {
               onChange={(event) => setRequestedSlug(event.target.value)}
               placeholder="lowercase-with-hyphens"
               required
+              disabled={createRequest.isPending}
             />
           </div>
 
@@ -59,12 +73,13 @@ export default function SanctumRequestForm() {
               onChange={(event) => setReason(event.target.value)}
               rows={4}
               required
+              disabled={createRequest.isPending}
             />
           </div>
 
           {createRequest.isError ? (
             <p className="text-sm text-destructive">
-              Failed to submit request: {String(createRequest.error)}
+              {friendlyErrorMessage(createRequest.error)}
             </p>
           ) : null}
 
