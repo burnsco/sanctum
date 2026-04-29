@@ -40,7 +40,7 @@ export async function createTicketedWS(options: TicketedWSOptions): Promise<WebS
 
   const baseUrl = getWsBaseUrl();
   const separator = options.path.includes("?") ? "&" : "?";
-  const wsUrl = `${baseUrl}${options.path}${separator}ticket=${ticketResp.ticket}`;
+  const wsUrl = `${baseUrl}${options.path}${separator}ticket=${encodeURIComponent(ticketResp.ticket)}`;
 
   const wsUrlNoTicket = `${baseUrl}${options.path}`;
 

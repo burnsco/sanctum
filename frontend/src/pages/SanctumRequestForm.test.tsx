@@ -71,7 +71,7 @@ describe("SanctumRequestForm", () => {
     expect(screen.getByText(/Request submitted\./)).toBeInTheDocument();
   });
 
-  it("renders error state", () => {
+  it("renders friendly error state", () => {
     hookState.isError = true;
     hookState.error = new Error("duplicate");
 
@@ -81,6 +81,6 @@ describe("SanctumRequestForm", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText(/Failed to submit request/)).toBeInTheDocument();
+    expect(screen.getByText(/Something went wrong/)).toBeInTheDocument();
   });
 });
