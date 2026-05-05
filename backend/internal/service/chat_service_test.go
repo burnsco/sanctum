@@ -122,7 +122,7 @@ func TestChatService_SendMessage_Unauthorized(t *testing.T) {
 
 func TestChatService_FullFlow(t *testing.T) {
 	db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	_ = db.AutoMigrate(&models.Conversation{}, &models.User{}, &models.ConversationParticipant{}, &models.Message{})
+	_ = db.AutoMigrate(&models.Conversation{}, &models.User{}, &models.ConversationParticipant{}, &models.Message{}, &models.UserBlock{})
 
 	repo := repository.NewChatRepository(db)
 	userRepo := repository.NewUserRepository(db)
@@ -189,6 +189,51 @@ func TestChatService_FullFlow(t *testing.T) {
 
 		_, err = svc.LeaveConversation(ctx, conv.ID, u2.ID)
 		assert.NoError(t, err)
+	})
+
+	t.Run("Blocked user cannot be added to group", func(t *testing.T) {
+		u4 := &models.User{Username: "u4", Email: "u4@e.com"}
+		db.Create(u4)
+		db.Create(&models.UserBlock{BlockerID: u1.ID, BlockedID: u4.ID})
+
+		_, err := svc.CreateConversation(ctx, CreateConversationInput{
+			UserID:         u1.ID,
+			IsGroup:        true,
+			Name:           "Blocked Group",
+			ParticipantIDs: []uint{u4.ID},
+		})
+		assert.Error(t, err)
+		var appErr *models.AppError
+		assert.True(t, errors.As(err, &appErr))
+		assert.Equal(t, "FORBIDDEN", appErr.Code)
+
+		conv, _ := svc.CreateConversation(ctx, CreateConversationInput{
+			UserID:         u1.ID,
+			IsGroup:        true,
+			Name:           "Allowed Group",
+			ParticipantIDs: []uint{u2.ID},
+		})
+		err = svc.AddParticipant(ctx, conv.ID, u1.ID, u4.ID)
+		assert.Error(t, err)
+		assert.True(t, errors.As(err, &appErr))
+		assert.Equal(t, "FORBIDDEN", appErr.Code)
+	})
+
+	t.Run("Non-owner participant cannot add users", func(t *testing.T) {
+		conv, _ := svc.CreateConversation(ctx, CreateConversationInput{
+			UserID:         u1.ID,
+			IsGroup:        true,
+			Name:           "Owner Managed Group",
+			ParticipantIDs: []uint{u2.ID},
+		})
+		u5 := &models.User{Username: "u5", Email: "u5@e.com"}
+		db.Create(u5)
+
+		err := svc.AddParticipant(ctx, conv.ID, u2.ID, u5.ID)
+		assert.Error(t, err)
+		var appErr *models.AppError
+		assert.True(t, errors.As(err, &appErr))
+		assert.Equal(t, "FORBIDDEN", appErr.Code)
 	})
 
 	t.Run("GetConversations", func(t *testing.T) {

@@ -116,6 +116,21 @@ func (s *ChatService) CreateConversation(ctx context.Context, in CreateConversat
 		}
 	}
 
+	if in.IsGroup {
+		for _, participantID := range in.ParticipantIDs {
+			if participantID == in.UserID {
+				continue
+			}
+			blocked, err := s.usersBlocked(ctx, in.UserID, participantID)
+			if err != nil {
+				return nil, err
+			}
+			if blocked {
+				return nil, models.NewForbiddenError("Cannot add this user to the group")
+			}
+		}
+	}
+
 	conv := &models.Conversation{
 		Name:       in.Name,
 		IsGroup:    in.IsGroup,
@@ -283,6 +298,16 @@ func (s *ChatService) AddParticipant(ctx context.Context, convID, actorUserID, p
 	}
 	if !conv.IsGroup {
 		return models.NewValidationError("Cannot add participants to 1-on-1 conversations")
+	}
+	if !s.canManageGroupParticipants(ctx, conv, actorUserID) {
+		return models.NewForbiddenError("Only the group owner or an admin can add participants")
+	}
+	blocked, err := s.usersBlocked(ctx, actorUserID, participantUserID)
+	if err != nil {
+		return err
+	}
+	if blocked {
+		return models.NewForbiddenError("Cannot add this user to the group")
 	}
 	return s.chatRepo.AddParticipant(ctx, convID, participantUserID)
 }
@@ -471,6 +496,17 @@ func isConversationParticipant(conv *models.Conversation, userID uint) bool {
 		}
 	}
 	return false
+}
+
+func (s *ChatService) canManageGroupParticipants(ctx context.Context, conv *models.Conversation, userID uint) bool {
+	if conv.CreatedBy == userID {
+		return true
+	}
+	if s.isAdmin == nil {
+		return false
+	}
+	admin, err := s.isAdmin(ctx, userID)
+	return err == nil && admin
 }
 
 func (s *ChatService) usersBlocked(ctx context.Context, userID, otherUserID uint) (bool, error) {
