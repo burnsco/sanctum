@@ -31,8 +31,14 @@ func InitRuntime(cfg *config.Config, opts Options) (*gorm.DB, *redis.Client, err
 		return nil, nil, fmt.Errorf("database connection failed: %w", err)
 	}
 
-	// Init Redis (may result in nil client if unreachable)
-	cache.InitRedis(cfg.RedisURL)
+	// Init Redis. Prod-like environments fail closed because auth/session and
+	// realtime safety controls depend on Redis-backed state.
+	if err := cache.InitRedis(cfg.RedisURL); err != nil {
+		if isProdLikeEnv(cfg.Env) {
+			return nil, nil, fmt.Errorf("redis connection failed: %w", err)
+		}
+		log.Printf("Redis connection warning: %v (continuing without cache)", err)
+	}
 	r := cache.GetClient()
 
 	if err := ensureDevRootAdmin(cfg, db); err != nil {
@@ -46,6 +52,11 @@ func InitRuntime(cfg *config.Config, opts Options) (*gorm.DB, *redis.Client, err
 	}
 
 	return db, r, nil
+}
+
+func isProdLikeEnv(env string) bool {
+	env = strings.ToLower(strings.TrimSpace(env))
+	return env == "production" || env == "prod" || env == "staging" || env == "stage"
 }
 
 func ensureDevRootAdmin(cfg *config.Config, db *gorm.DB) error {

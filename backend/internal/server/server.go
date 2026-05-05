@@ -108,7 +108,12 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}
 
 	// Initialize Redis
-	cache.InitRedis(cfg.RedisURL)
+	if err := cache.InitRedis(cfg.RedisURL); err != nil {
+		if isProdLikeEnv(cfg.Env) {
+			return nil, fmt.Errorf("redis connection failed: %w", err)
+		}
+		log.Printf("Redis connection warning: %v (continuing without cache)", err)
+	}
 	redisClient := cache.GetClient()
 
 	return newServerFromDeps(cfg, db, redisClient), nil
@@ -207,6 +212,11 @@ func newServerFromDeps(cfg *config.Config, db *gorm.DB, redisClient *redis.Clien
 	}
 
 	return server
+}
+
+func isProdLikeEnv(env string) bool {
+	env = strings.ToLower(strings.TrimSpace(env))
+	return env == "production" || env == "prod" || env == "staging" || env == "stage"
 }
 
 // SetupMiddleware configures middleware for the Fiber app

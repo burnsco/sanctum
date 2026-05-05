@@ -4,6 +4,7 @@ package cache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -42,14 +43,13 @@ func (h metricsHook) ProcessPipelineHook(next redis.ProcessPipelineHook) redis.P
 }
 
 // InitRedis initializes the Redis client with the given address.
-func InitRedis(addr string) {
+func InitRedis(addr string) error {
 	var opts *redis.Options
 	if strings.Contains(addr, "://") {
 		parsed, err := redis.ParseURL(addr)
 		if err != nil {
-			log.Printf("Redis connection warning: invalid REDIS_URL %q: %v (continuing without cache)", addr, err)
 			client = nil
-			return
+			return fmt.Errorf("invalid REDIS_URL %q: %w", addr, err)
 		}
 		opts = parsed
 	} else {
@@ -64,11 +64,12 @@ func InitRedis(addr string) {
 	defer cancel()
 
 	if err := client.Ping(ctx).Err(); err != nil {
-		log.Printf("Redis connection warning: %v (continuing without cache)", err)
 		client = nil
-	} else {
-		log.Println("Redis connected successfully")
+		return fmt.Errorf("redis ping failed: %w", err)
 	}
+
+	log.Println("Redis connected successfully")
+	return nil
 }
 
 // GetClient returns the current Redis client instance.
