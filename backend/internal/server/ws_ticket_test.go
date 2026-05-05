@@ -43,7 +43,6 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		ticket := "ws-test-ticket-1"
 		userID := "123"
 		key := wsTicketKey(ticket)
-		consumedKey := wsConsumedTicketKey(ticket)
 
 		// Set ticket in Redis
 		err := rdb.Set(ctx, key, userID, time.Minute).Err()
@@ -65,9 +64,6 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		_, inCache := s.consumedTickets[ticket]
 		s.consumedTicketsMu.Unlock()
 		assert.True(t, inCache, "Ticket should be cached in-process after GETDEL")
-		consumedExists, err := rdb.Exists(ctx, consumedKey).Result()
-		assert.NoError(t, err)
-		assert.Equal(t, int64(1), consumedExists, "Ticket should be cached in Redis for cross-instance handshakes")
 
 		// Verify locals
 		var body map[string]interface{}
@@ -108,35 +104,53 @@ func TestAuthRequired_WSTicket(t *testing.T) {
 		assert.Equal(t, int64(0), exists)
 	})
 
-	t.Run("WS Path - Second pass on another instance uses Redis consumed cache", func(t *testing.T) {
+	t.Run("WS Path - Second independent attempt with different fingerprint is rejected", func(t *testing.T) {
 		ticket := "ws-test-ticket-3"
 		userID := "321"
 		key := wsTicketKey(ticket)
-
-		otherServer := &Server{
-			config:          &config.Config{JWTSecret: "test-secret"},
-			redis:           rdb,
-			consumedTickets: make(map[string]consumedTicketEntry),
-		}
-		otherApp := newAuthRequiredTestApp(otherServer)
 
 		err := rdb.Set(ctx, key, userID, time.Minute).Err()
 		assert.NoError(t, err)
 
 		req := newRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		req.Header.Set("User-Agent", "first-upgrade")
 		resp, err := app.Test(req)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 		_ = resp.Body.Close()
 
 		req2 := newRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
-		resp2, err := otherApp.Test(req2)
+		req2.Header.Set("User-Agent", "replay-attempt")
+		resp2, err := app.Test(req2)
 		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, resp2.StatusCode, "Second pass should succeed from Redis consumed cache")
+		assert.Equal(t, http.StatusUnauthorized, resp2.StatusCode, "Consumed ticket should reject a distinct replay attempt")
+		_ = resp2.Body.Close()
+	})
+
+	t.Run("WS Path - Same fingerprint retry uses in-process cache", func(t *testing.T) {
+		ticket := "ws-test-ticket-4"
+		userID := "654"
+		key := wsTicketKey(ticket)
+
+		err := rdb.Set(ctx, key, userID, time.Minute).Err()
+		assert.NoError(t, err)
+
+		req := newRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		req.Header.Set("User-Agent", "fiber-upgrade")
+		resp, err := app.Test(req)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+		_ = resp.Body.Close()
+
+		req2 := newRequest(http.MethodGet, "/api/ws/test?ticket="+ticket, nil)
+		req2.Header.Set("User-Agent", "fiber-upgrade")
+		resp2, err := app.Test(req2)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp2.StatusCode, "Same upgrade fingerprint should succeed via in-process cache")
 
 		var body map[string]interface{}
 		_ = json.NewDecoder(resp2.Body).Decode(&body)
-		assert.Equal(t, float64(321), body["userID"])
+		assert.Equal(t, float64(654), body["userID"])
 		_ = resp2.Body.Close()
 	})
 
@@ -181,7 +195,7 @@ func TestServer_ConsumeWSTicket(t *testing.T) {
 		ticket := "consume-me"
 		// Pre-populate the in-process cache (simulating what GETDEL + cache does)
 		s.consumedTicketsMu.Lock()
-		s.consumedTickets[ticket] = consumedTicketEntry{userID: 123, consumeAt: time.Now()}
+		s.consumedTickets[ticket] = consumedTicketEntry{userID: 123, fingerprint: "test", consumeAt: time.Now()}
 		s.consumedTicketsMu.Unlock()
 
 		s.consumeWSTicket(ctx, ticket)
@@ -198,28 +212,6 @@ func TestServer_ConsumeWSTicket(t *testing.T) {
 
 	t.Run("Consume empty ticket - noop", func(_ *testing.T) {
 		s.consumeWSTicket(ctx, "")
-	})
-
-	t.Run("Consume valid ticket removes redis consumed cache", func(t *testing.T) {
-		mr, err := miniredis.Run()
-		assert.NoError(t, err)
-		defer mr.Close()
-
-		rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
-		server := &Server{
-			redis:           rdb,
-			consumedTickets: make(map[string]consumedTicketEntry),
-		}
-		ticket := "consume-cross-instance"
-
-		err = rdb.Set(ctx, wsConsumedTicketKey(ticket), "42", time.Minute).Err()
-		assert.NoError(t, err)
-
-		server.consumeWSTicket(ctx, ticket)
-
-		exists, err := rdb.Exists(ctx, wsConsumedTicketKey(ticket)).Result()
-		assert.NoError(t, err)
-		assert.Equal(t, int64(0), exists)
 	})
 }
 
