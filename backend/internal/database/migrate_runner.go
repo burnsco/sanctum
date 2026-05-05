@@ -58,16 +58,22 @@ func isMissingTableError(err error) bool {
 }
 
 func (s *migrationStore) ApplyMigration(ctx context.Context, version int, name, sql string) error {
-	if err := s.db.WithContext(ctx).Exec(sql).Error; err != nil {
-		return fmt.Errorf("failed to apply migration %d (%s): %w", version, name, err)
-	}
+	err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec(sql).Error; err != nil {
+			return fmt.Errorf("failed to apply migration %d (%s): %w", version, name, err)
+		}
 
-	log := MigrationLog{
-		Version: version,
-		Name:    name,
-	}
-	if err := s.db.WithContext(ctx).Create(&log).Error; err != nil {
-		return fmt.Errorf("failed to record migration %d: %w", version, err)
+		log := MigrationLog{
+			Version: version,
+			Name:    name,
+		}
+		if err := tx.Create(&log).Error; err != nil {
+			return fmt.Errorf("failed to record migration %d: %w", version, err)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	middleware.Logger.Info("Migration applied", slog.Int("version", version), slog.String("name", name))
