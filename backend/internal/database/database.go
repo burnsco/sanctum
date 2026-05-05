@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"sanctum/internal/config"
@@ -68,6 +69,7 @@ func (l *CustomGormLogger) Trace(ctx context.Context, begin time.Time, fc func()
 
 	elapsed := time.Since(begin)
 	sql, rows := fc()
+	sql = redactSQLLiterals(sql)
 
 	switch {
 	case err != nil && l.Config.LogLevel >= logger.Error && !errors.Is(err, gorm.ErrRecordNotFound):
@@ -91,6 +93,33 @@ func (l *CustomGormLogger) Trace(ctx context.Context, begin time.Time, fc func()
 			slog.Duration("elapsed", elapsed),
 		)
 	}
+}
+
+func redactSQLLiterals(sql string) string {
+	var b strings.Builder
+	b.Grow(len(sql))
+	inString := false
+	for i := 0; i < len(sql); i++ {
+		ch := sql[i]
+		if !inString {
+			if ch == '\'' {
+				inString = true
+				b.WriteByte('?')
+				continue
+			}
+			b.WriteByte(ch)
+			continue
+		}
+		if ch != '\'' {
+			continue
+		}
+		if i+1 < len(sql) && sql[i+1] == '\'' {
+			i++
+			continue
+		}
+		inString = false
+	}
+	return b.String()
 }
 
 func buildDSN(cfg *config.Config, read bool) string {
@@ -135,6 +164,7 @@ func newDBInstance(dsn string, _ *config.Config) (*gorm.DB, error) {
 			SlowThreshold:             200 * time.Millisecond,
 			LogLevel:                  logger.Warn,
 			IgnoreRecordNotFoundError: true,
+			ParameterizedQueries:      true,
 			Colorful:                  false,
 		},
 	}

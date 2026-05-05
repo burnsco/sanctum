@@ -26,3 +26,13 @@ func TestConfigurePool(t *testing.T) {
 	_, err = db.DB()
 	assert.NoError(t, err)
 }
+
+func TestRedactSQLLiterals(t *testing.T) {
+	sql := "INSERT INTO users (email, password) VALUES ('person@example.com', 'hash''withquote') RETURNING id"
+
+	got := redactSQLLiterals(sql)
+
+	assert.NotContains(t, got, "person@example.com")
+	assert.NotContains(t, got, "hash")
+	assert.Equal(t, "INSERT INTO users (email, password) VALUES (?, ?) RETURNING id", got)
+}
