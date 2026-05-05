@@ -97,3 +97,40 @@ func TestUploadImageMissingFile(t *testing.T) {
 		t.Fatalf("expected 400, got %d", resp.StatusCode)
 	}
 }
+
+func TestUploadImageRejectsOversizedFileBeforeRead(t *testing.T) {
+	cfg := &config.Config{ImageUploadDir: t.TempDir(), ImageMaxUploadSizeMB: 1}
+	repo := testutil.NewImageRepoStub()
+	s := &Server{config: cfg, imageRepo: repo, imageService: service.NewImageService(repo, cfg)}
+
+	app := fiber.New()
+	app.Use(func(c *fiber.Ctx) error {
+		c.Locals("userID", uint(1))
+		return c.Next()
+	})
+	app.Post("/api/images/upload", s.UploadImage)
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	part, err := writer.CreateFormFile("image", "too-large.png")
+	if err != nil {
+		t.Fatalf("create form file: %v", err)
+	}
+	if _, writeErr := part.Write(bytes.Repeat([]byte("x"), int(s.maxImageUploadBytes())+1)); writeErr != nil {
+		t.Fatalf("write oversized file: %v", writeErr)
+	}
+	if closeErr := writer.Close(); closeErr != nil {
+		t.Fatalf("close writer: %v", closeErr)
+	}
+
+	req := newRequest(http.MethodPost, "/api/images/upload", &body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	resp, reqErr := app.Test(req)
+	if reqErr != nil {
+		t.Fatalf("upload request failed: %v", reqErr)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", resp.StatusCode)
+	}
+}

@@ -823,7 +823,8 @@ func (s *Server) Start() error {
 	isProduction := s.config.Env == "production" || s.config.Env == "prod"
 
 	fiberCfg := fiber.Config{
-		AppName: "Social Media API",
+		AppName:   "Social Media API",
+		BodyLimit: int(s.maxImageUploadBytes() + imageMultipartOverheadBytes),
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			// Default status code
 			code := fiber.StatusInternalServerError

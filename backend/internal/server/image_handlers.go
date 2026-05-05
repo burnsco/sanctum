@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"io"
 	"strings"
 
@@ -9,6 +10,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 )
+
+const imageMultipartOverheadBytes = 1 * 1024 * 1024
 
 // ImageUploadResponse is the API response after uploading an image.
 type ImageUploadResponse struct {
@@ -39,6 +42,10 @@ func (s *Server) UploadImage(c *fiber.Ctx) error {
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("No file uploaded"))
 	}
+	maxBytes := s.maxImageUploadBytes()
+	if maxBytes > 0 && file.Size > maxBytes {
+		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError(fmt.Sprintf("File too large (max %dMB)", maxBytes/(1024*1024))))
+	}
 
 	src, err := file.Open()
 	if err != nil {
@@ -46,9 +53,16 @@ func (s *Server) UploadImage(c *fiber.Ctx) error {
 	}
 	defer func() { _ = src.Close() }()
 
-	content, err := io.ReadAll(src)
+	reader := io.Reader(src)
+	if maxBytes > 0 {
+		reader = io.LimitReader(src, maxBytes+1)
+	}
+	content, err := io.ReadAll(reader)
 	if err != nil {
 		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError("Unable to read uploaded file"))
+	}
+	if maxBytes > 0 && int64(len(content)) > maxBytes {
+		return models.RespondWithError(c, fiber.StatusBadRequest, models.NewValidationError(fmt.Sprintf("File too large (max %dMB)", maxBytes/(1024*1024))))
 	}
 
 	uploaded, err := s.imageSvc().Upload(c.UserContext(), service.UploadImageInput{
@@ -112,4 +126,11 @@ func toImageUploadResponse(imageSvc *service.ImageService, image *models.Image) 
 
 func (s *Server) imageSvc() *service.ImageService {
 	return s.imageService
+}
+
+func (s *Server) maxImageUploadBytes() int64 {
+	if s == nil || s.config == nil || s.config.ImageMaxUploadSizeMB <= 0 {
+		return int64(service.DefaultImageMaxUploadSizeMB) * 1024 * 1024
+	}
+	return int64(s.config.ImageMaxUploadSizeMB) * 1024 * 1024
 }
