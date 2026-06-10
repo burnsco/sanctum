@@ -43,10 +43,12 @@ func TestApplyMigrationRollsBackSQLWhenLogInsertFails(t *testing.T) {
 	if err != nil {
 		t.Fatalf("open sqlite: %v", err)
 	}
-	if err := db.AutoMigrate(&MigrationLog{}); err != nil {
+	err = db.AutoMigrate(&MigrationLog{})
+	if err != nil {
 		t.Fatalf("migrate logs: %v", err)
 	}
-	if err := db.Create(&MigrationLog{Version: 1, Name: "existing"}).Error; err != nil {
+	err = db.Create(&MigrationLog{Version: 1, Name: "existing"}).Error
+	if err != nil {
 		t.Fatalf("seed migration log: %v", err)
 	}
 

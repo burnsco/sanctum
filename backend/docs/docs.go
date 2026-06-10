@@ -1528,6 +1528,9 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "visibility": {
+                    "type": "string"
                 }
             }
         },

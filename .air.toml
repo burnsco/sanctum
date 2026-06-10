@@ -4,7 +4,6 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "./tmp/main"
   cmd = "cd backend && go build -o ./tmp/main ./cmd/server"
   delay = 1000
   entrypoint = "./tmp/main"
