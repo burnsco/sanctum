@@ -14,8 +14,8 @@ echo "🚀 Running pre-push checks (lint + type-check + short tests)..."
 
 if [ -d frontend ] && command -v bun >/dev/null 2>&1; then
   cd frontend && bun install --frozen-lockfile --silent
-  echo "  → biome lint..."
-  bun --bun biome check src || { printf "\nERROR: Frontend lint failed.\n"; exit 1; }
+  echo "  → oxlint..."
+  bun run lint || { printf "\nERROR: Frontend lint failed.\n"; exit 1; }
   echo "  → tsc..."
   bun --bun tsc --noEmit || { printf "\nERROR: Frontend type-check failed.\n"; exit 1; }
   cd ..
